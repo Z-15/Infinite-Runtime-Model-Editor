@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="InfiniteRuntimeModelEditor.Controls.translationBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:InfiniteRuntimeModelEditor.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="115" d:DesignWidth="330">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Themes/z_dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Margin="5,5,5,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="title" Text="Translation" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Row="0">
+                <TextBlock x:Name="value1" Text="X:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
+                <Slider x:Name="xSlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="xValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Row="1">
+                <TextBlock Text="Y:" x:Name="value2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
+                <Slider x:Name="ySlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="yValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Row="2">
+                <TextBlock Text="Z:" x:Name="value3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
+                <Slider x:Name="zSlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="zValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

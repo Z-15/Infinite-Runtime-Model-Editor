@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="InfiniteRuntimeModelEditor.Controls.hashBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:InfiniteRuntimeModelEditor.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="30" d:DesignWidth="330">
+    <Grid Margin="5,5,5,0">
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Hash/Name: " VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5"/>
+            <TextBox x:Name="hashValue" Width="230" Height="20" VerticalContentAlignment="Center" IsReadOnly="True"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
