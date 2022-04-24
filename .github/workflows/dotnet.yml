@@ -33,5 +33,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: IRME
-        path: Infinite-Runtime-Model-Editor/bin/Release/net5.0-windows
+        path: InfiniteRuntimeModelEditor/bin/Release/net5.0-windows
         retention-days: 30
