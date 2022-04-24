@@ -4,6 +4,9 @@
 
 Latest Build: 
 
+[![Download latest build](https://github.com/Z-15/Infinite-Runtime-Model-Editor/actions/workflows/dotnet.yml/badge.svg)](https://nightly.link/Z-15/Infinite-Runtime-Model-Editor/workflows/dotnet/master/IRME.zip) <- (click to download)
+
+
 # Read Me
 
 **Current Capabilities:**
