@@ -6,6 +6,10 @@ Latest Build:
 
 [![Download latest build](https://github.com/Z-15/Infinite-Runtime-Model-Editor/actions/workflows/dotnet.yml/badge.svg)](https://nightly.link/Z-15/Infinite-Runtime-Model-Editor/workflows/dotnet/master/IRME.zip)
 
+.Net 5.0 Runtime:
+
+https://download.visualstudio.microsoft.com/download/pr/68b7e1d6-8d11-4d49-926a-23fadb7d1948/e754199aff44f4bb6740f2f75c550724/dotnet-runtime-5.0.16-win-x64.exe
+
 
 # Read Me
 
