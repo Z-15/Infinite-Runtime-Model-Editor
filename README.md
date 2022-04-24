@@ -20,3 +20,14 @@ Latest Build:
   a. Ability to undo changes on individual nodes.
   b. Ability to revert an entire model (as long as it stays loaded).
   c. Ability to hide marker and nodes.
+
+
+**Known Issues:**
+
+1. Rotations on the Y axis cause the node/marker to glitch out.
+
+**Other:**
+
+1. If you want to name hashes, just follow the format in the files/hashes.txt and add onto it. 
+2. Please report any bugs or issues you find.
+3. If there are any additional features you want to request, please do so.
