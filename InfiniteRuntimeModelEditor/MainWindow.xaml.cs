@@ -74,14 +74,14 @@ namespace InfiniteRuntimeModelEditor
         string tagID = string.Empty;
         int nodeCount = 0;
 
-        Dictionary<int, MarkerStruct> markers = new Dictionary<int, MarkerStruct>(); // int = Overall index of the marker, not the index of the marker group.
-        Dictionary<int, NodeStruct> nodes = new Dictionary<int, NodeStruct>(); // int = Node index.
+        Dictionary<int, ModelMarker> markers = new Dictionary<int, ModelMarker>(); // int = Overall index of the marker, not the index of the marker group.
+        Dictionary<int, ModelNode> nodes = new Dictionary<int, ModelNode>(); // int = Node index.
         Dictionary<string, string> hashNames = new Dictionary<string, string>();
         Dictionary<string, SaveChange> changes = new Dictionary<string, SaveChange>();
         List<Brush> materials = new List<Brush>() { Brushes.Aqua, Brushes.Blue, Brushes.Cyan, Brushes.Orange, Brushes.Purple, Brushes.Yellow, Brushes.Violet, Brushes.Pink, Brushes.MintCream, Brushes.PowderBlue, Brushes.Tan, Brushes.PaleTurquoise };
         int materialInd = 0;
 
-        public struct MarkerStruct
+        public class ModelMarker
         {
             public int id;
             public int groupID;
@@ -105,7 +105,7 @@ namespace InfiniteRuntimeModelEditor
             public ArrowVisual3D arrow;
         }
 
-        public struct NodeStruct
+        public class ModelNode
         {
             public int id;
             public int parentNode;
@@ -114,18 +114,11 @@ namespace InfiniteRuntimeModelEditor
             public string nodeAddress2;
             public string nodeInvAddress;
 
-            public float scale;
             public Vector3 translation;
-            public Vector3 inverse;
-            public Vector3 inverseV;
-            public Point3D center;
             public Quaternion qRotation;
             public Vector3 rRotation;
             public Vector3 dRotation;
-
-            public Quaternion oRot;
-            public Vector3 oTran;
-            public float oScale;
+            public float scale;
 
             public Vector3 invForward;
             public Vector3 invLeft;
@@ -134,6 +127,12 @@ namespace InfiniteRuntimeModelEditor
             public float invScale;
             public float DFP;
 
+            public Vector3 inverse;
+            public Vector3 inverseV;
+
+            public Quaternion oRot;
+            public Vector3 oTran;
+            public float oScale;
             public Vector3 oInvForward;
             public Vector3 oInvLeft;
             public Vector3 oInvUp;
@@ -146,7 +145,7 @@ namespace InfiniteRuntimeModelEditor
             public BoxVisual3D cube;
         }
 
-        public struct SaveChange
+        public class SaveChange
         {
             public string id;
             public string tagID;
@@ -229,27 +228,45 @@ namespace InfiniteRuntimeModelEditor
                     // Get the size of the node list
                     nodeCount = m.ReadInt(renderAddress + "+0x1FC");
 
-                    // Create node structs
+                    // Create node classes
                     for (int i = 0; i < nodeCount; i++)
                     {
+                        ModelNode newNode = new ModelNode();
                         TreeViewItem item = new TreeViewItem();
-                        NodeStruct newNode = new NodeStruct();
                         BoxVisual3D cube = new BoxVisual3D();
                         
-                        // Get values
+                        // Get offsets of model
                         string nodeOffset = (i * 32).ToString("X");
-                        string nodeAdd = m.Get64BitCode(renderAddress + "+0x1EC,0x" + nodeOffset).ToString("X");
+                        string nodeModelOffset = (i * 92).ToString("X");
                         
-                        string nodeInvOff = (i * 92).ToString("X");
-                        string nodeInvAdd = m.Get64BitCode(modelAddress + "+0x240,0x" + nodeInvOff).ToString("X");
+                        // Get addresses
+                        string nodeRuntimeAdd = m.Get64BitCode(renderAddress + "+0x1EC,0x" + nodeOffset).ToString("X");
+                        string nodeModelAdd = m.Get64BitCode(modelAddress + "+0x240,0x" + nodeModelOffset).ToString("X");
+                        string nodeAdd = m.Get64BitCode(renderAddress + "+0x40,0x0").ToString("X");
+                        
+                        // Node name
+                        string nodeHash = BitConverter.ToString(m.ReadBytes(nodeAdd + "+0x" + (i * 124).ToString("X"), 4)).Replace("-", string.Empty);
 
-                        string nodeAdd2 = m.Get64BitCode(renderAddress + "+0x40,0x0").ToString("X");
-                        int nodeParent = m.Read2Byte(nodeAdd2 + "+0x" + ((i * 124) + 4).ToString("X"));
-                        string nodeHash = BitConverter.ToString(m.ReadBytes(nodeAdd2 + "+0x" + (i * 124).ToString("X"), 4)).Replace("-", string.Empty);
+                        // Node parent
+                        int nodeParent = m.Read2Byte(nodeAdd + "+0x" + ((i * 124) + 4).ToString("X"));
 
-                        float scale = m.ReadFloat(nodeAdd + "+0x1C");
-                        Vector3 translation = new Vector3(m.ReadFloat(nodeAdd + "+0x10"), m.ReadFloat(nodeAdd + "+0x14"), m.ReadFloat(nodeAdd + "+0x18"));
-                        Vector3 inverse = new Vector3(m.ReadFloat(nodeInvAdd + "+0x2C"), m.ReadFloat(nodeInvAdd + "+0x3C"), m.ReadFloat(nodeInvAdd + "+0x4C"));
+                        // Runtime Node Values
+                        Vector3 translation = new Vector3(m.ReadFloat(nodeRuntimeAdd + "+0x10", round: false), m.ReadFloat(nodeRuntimeAdd + "+0x14", round: false), m.ReadFloat(nodeRuntimeAdd + "+0x18", round: false));
+                        Quaternion qRotation = new Quaternion(m.ReadFloat(nodeRuntimeAdd, round: false), m.ReadFloat(nodeRuntimeAdd + "+0x4", round: false), m.ReadFloat(nodeRuntimeAdd + "+0x8", round: false), m.ReadFloat(nodeRuntimeAdd + "+0xC", round: false));
+                        Vector3 rRotation = ToEulerAngles(qRotation);
+                        Vector3 dRotation = ToDegree(rRotation);
+                        float scale = m.ReadFloat(nodeRuntimeAdd + "+0x1C");
+                        
+                        // Node values
+                        Vector3 invForward = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 40).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 44).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 48).ToString("X"), round: false));
+                        Vector3 invLeft = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 52).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 56).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 60).ToString("X"), round: false));
+                        Vector3 invUp = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 64).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 68).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 72).ToString("X"), round: false));
+                        Vector3 invPosition = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 76).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 80).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 84).ToString("X"), round: false));
+                        float invScale = m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 88).ToString("X"), round: false);
+                        float DFP = m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 92).ToString("X"), round: false);
+                        
+                        // Model node values
+                        Vector3 inverse = new Vector3(m.ReadFloat(nodeModelAdd + "+0x2C", round: false), m.ReadFloat(nodeModelAdd + "+0x3C", round: false), m.ReadFloat(nodeModelAdd + "+0x4C", round: false));
                         Vector3 inverseV = new Vector3(1, 1, 1);
                         if (inverse.X < 0)
                             inverseV.X = -1;
@@ -257,17 +274,6 @@ namespace InfiniteRuntimeModelEditor
                             inverseV.Y = -1;
                         if (inverse.Z < 0)
                             inverseV.Z = -1;
-                        Point3D center = new Point3D(translation.X * inverseV.X * inverseV.X, translation.Y * inverseV.Y * inverseV.Y, translation.Z * inverseV.Z * inverseV.Z);
-                        Quaternion qRotation = new Quaternion(m.ReadFloat(nodeAdd), m.ReadFloat(nodeAdd + "+0x4"), m.ReadFloat(nodeAdd + "+0x8"), m.ReadFloat(nodeAdd + "+0xC"));
-                        Vector3 rRotation = ToEulerAngles(qRotation);
-                        Vector3 dRotation = ToDegree(rRotation);
-
-                        Vector3 invForward = new Vector3(m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 40).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 44).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 48).ToString("X")));
-                        Vector3 invLeft = new Vector3(m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 52).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 56).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 60).ToString("X")));
-                        Vector3 invUp = new Vector3(m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 64).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 68).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 72).ToString("X")));
-                        Vector3 invPosition = new Vector3(m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 76).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 80).ToString("X")), m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 84).ToString("X")));
-                        float invScale = m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 88).ToString("X"));
-                        float DFP = m.ReadFloat(nodeAdd2 + "+0x" + ((i * 124) + 92).ToString("X"));
 
                         if (hashNames.ContainsKey(nodeHash))
                         {
@@ -278,32 +284,38 @@ namespace InfiniteRuntimeModelEditor
                         newNode.id = i;
                         newNode.parentNode = nodeParent;
                         newNode.name = nodeHash;
-                        newNode.scale = scale;
-                        newNode.nodeAddress = nodeAdd;
-                        newNode.nodeAddress2 = nodeAdd2;
-                        newNode.nodeInvAddress = nodeInvAdd;
-                        newNode.translation = translation;
-                        newNode.inverse = inverse;
-                        newNode.inverseV = inverseV;
-                        newNode.center = center;   
+                        
+                        newNode.nodeAddress = nodeRuntimeAdd;
+                        newNode.nodeAddress2 = nodeAdd;
+                        newNode.nodeInvAddress = nodeModelAdd;
+                        
+                        newNode.translation = translation; 
                         newNode.qRotation = qRotation;
                         newNode.rRotation = rRotation;
                         newNode.dRotation = dRotation;
-                        newNode.oRot = qRotation;
-                        newNode.oTran = translation;
-                        newNode.oScale = scale;
+                        newNode.scale = scale;
+
                         newNode.invForward = invForward;
                         newNode.invLeft = invLeft;
                         newNode.invUp = invUp;
                         newNode.invPosition = invPosition;
                         newNode.invScale = invScale;
                         newNode.DFP = DFP;
+
+                        newNode.inverse = inverse;
+                        newNode.inverseV = inverseV;
+
+                        newNode.oRot = qRotation;
+                        newNode.oTran = translation;
+                        newNode.oScale = scale;
+
                         newNode.oInvForward = invForward;
                         newNode.oInvLeft = invLeft;
                         newNode.oInvUp = invUp;
                         newNode.oInvPosition = invPosition;
                         newNode.oInvScale = invScale;
                         newNode.oDFP = DFP;
+                        
                         newNode.material = materials[materialInd];
                         newNode.item = item;
                         newNode.cube = cube;
@@ -334,7 +346,7 @@ namespace InfiniteRuntimeModelEditor
                     }
 
                     // Assign nodes to proper parents
-                    foreach (KeyValuePair<int, NodeStruct> nodeKVP in nodes)
+                    foreach (KeyValuePair<int, ModelNode> nodeKVP in nodes)
                     {
                         // Check if node has a parent
                         if (nodeKVP.Value.parentNode.ToString("X") == "FFFF")
@@ -365,10 +377,10 @@ namespace InfiniteRuntimeModelEditor
                             string markerAdd = m.Get64BitCode(markerGroupAdd + "+0x4,0x" + (j * 56).ToString("X")).ToString("X");
 
                             // Get values
-                            Quaternion markerRotation = new Quaternion(m.ReadFloat(markerAdd + "+0x18"), m.ReadFloat(markerAdd + "+0x1C"), m.ReadFloat(markerAdd + "+0x20"), m.ReadFloat(markerAdd + "+0x24"));
-                            Vector3 markerTrans = new Vector3(m.ReadFloat(markerAdd + "+0xC"), m.ReadFloat(markerAdd + "+0x10"), m.ReadFloat(markerAdd + "+0x14"));
-                            Vector3 markerDirection = new Vector3(m.ReadFloat(markerAdd + "+0x2C"), m.ReadFloat(markerAdd + "+0x30"), m.ReadFloat(markerAdd + "+0x34"));
-                            float markerScale = m.ReadFloat(markerAdd + "+0x28");
+                            Quaternion markerRotation = new Quaternion(m.ReadFloat(markerAdd + "+0x18", round: false), m.ReadFloat(markerAdd + "+0x1C", round: false), m.ReadFloat(markerAdd + "+0x20", round: false), m.ReadFloat(markerAdd + "+0x24", round: false));
+                            Vector3 markerTrans = new Vector3(m.ReadFloat(markerAdd + "+0xC", round: false), m.ReadFloat(markerAdd + "+0x10", round: false), m.ReadFloat(markerAdd + "+0x14", round: false));
+                            Vector3 markerDirection = new Vector3(m.ReadFloat(markerAdd + "+0x2C", round: false), m.ReadFloat(markerAdd + "+0x30", round: false), m.ReadFloat(markerAdd + "+0x34", round: false));
+                            float markerScale = m.ReadFloat(markerAdd + "+0x28", round: false);
                             int parentNode = m.Read2Byte(markerAdd + "+0x08");
                             
                             // Create tree view item and arrow
@@ -384,7 +396,7 @@ namespace InfiniteRuntimeModelEditor
                             }
 
                             // Create marker struct
-                            MarkerStruct newMarker = new MarkerStruct();
+                            ModelMarker newMarker = new ModelMarker();
                             newMarker.id = markerInd;
                             newMarker.groupID = i;
                             newMarker.groupInd = j;
@@ -414,7 +426,7 @@ namespace InfiniteRuntimeModelEditor
                     }
 
                     // Assign parents to markers
-                    foreach (KeyValuePair<int, MarkerStruct> markerKVP in markers)
+                    foreach (KeyValuePair<int, ModelMarker> markerKVP in markers)
                     {
                         // Probably not needed here, but checks just in case.
                         if (markerKVP.Value.parentNode.ToString("X") == "FFFF")
@@ -441,17 +453,17 @@ namespace InfiniteRuntimeModelEditor
             // Set parents and load the model through updates
             try
             {
-                foreach (NodeStruct node in nodes.Values)
+                foreach (ModelNode node in nodes.Values)
                 {
                     if (node.parentNode.ToString("X") != "FFFF")
                     {
-                        NodeStruct parentNode = nodes[node.parentNode];
+                        ModelNode parentNode = nodes[node.parentNode];
                         parentNode.cube.Children.Add(node.cube);
                     }
                 }
-                foreach (MarkerStruct marker in markers.Values)
+                foreach (ModelMarker marker in markers.Values)
                 {
-                    NodeStruct parentNode = nodes[marker.parentNode];
+                    ModelNode parentNode = nodes[marker.parentNode];
                     parentNode.cube.Children.Add(marker.arrow);
                 }
 
@@ -474,7 +486,7 @@ namespace InfiniteRuntimeModelEditor
                     {
                         BoxVisual3D child = child1 as BoxVisual3D;
                         int childInd = int.Parse(child.GetName());
-                        NodeStruct childStruct = nodes[childInd];
+                        ModelNode childStruct = nodes[childInd];
 
                         UpdateNodes(childStruct);
                     }
@@ -482,7 +494,7 @@ namespace InfiniteRuntimeModelEditor
                     {
                         ArrowVisual3D child = child1 as ArrowVisual3D;
                         int childInd = int.Parse(child.GetName());
-                        MarkerStruct childStruct = markers[childInd];
+                        ModelMarker childStruct = markers[childInd];
 
                         UpdateMarkers(childStruct);
                     }
@@ -517,9 +529,9 @@ namespace InfiniteRuntimeModelEditor
                     // Get type of item hit
                     var t = item.Tag.GetType();
 
-                    if (t.Equals(typeof(NodeStruct)))
+                    if (t.Equals(typeof(ModelNode)))
                     {
-                        NodeStruct node = (NodeStruct)item.Tag;
+                        ModelNode node = (ModelNode)item.Tag;
 
                         // Create value blocks for node
                         CreateHashBlock(node.name, node.id);
@@ -552,13 +564,13 @@ namespace InfiniteRuntimeModelEditor
                         undoButton1.Margin = new Thickness(5);
                         otherPropTab.Children.Add(undoButton1);
                         
-                        ShowSelection(node, new MarkerStruct());
+                        ShowSelection(node, new ModelMarker());
                         
                         statusText.Text = "Node properties loaded...";
                     }
-                    else if (t.Equals(typeof(MarkerStruct)))
+                    else if (t.Equals(typeof(ModelMarker)))
                     {
-                        MarkerStruct marker = (MarkerStruct)item.Tag;
+                        ModelMarker marker = (ModelMarker)item.Tag;
 
                         // Create value blocks for node
                         CreateHashBlock(marker.groupName, marker.id);
@@ -575,7 +587,7 @@ namespace InfiniteRuntimeModelEditor
                         undoButton.Width = 100;
                         propTab.Children.Add(undoButton);
                         
-                        ShowSelection(new NodeStruct(), marker);
+                        ShowSelection(new ModelNode(), marker);
 
                         statusText.Text = "Marker properties loaded...";
                     }
@@ -710,41 +722,39 @@ namespace InfiniteRuntimeModelEditor
                     if (objType == "n")
                     {
                         // Get current node
-                        NodeStruct node = nodes[index];
+                        ModelNode node = nodes[index];
                         float newValue = float.Parse(textBox.Text);
 
                         // Rotation
                         if (updateType == "rotX" || updateType == "rotY" || updateType == "rotZ")
                         {
-                            Quaternion newValues;
-                            Vector3 rRotNew;
+                            Vector3 dRotNew = new Vector3();
                             switch (updateType)
                             {
                                 case "rotX":
-                                    rRotNew = ToRadian(new Vector3(newValue, node.dRotation.Y, node.dRotation.Z));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(newValue, node.dRotation.Y, node.dRotation.Z);
                                     break;
                                 case "rotY":
-                                    rRotNew = ToRadian(new Vector3(node.dRotation.X, newValue, node.dRotation.Z));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(node.dRotation.X, newValue, node.dRotation.Z);
                                     break;
                                 case "rotZ":
-                                    rRotNew = ToRadian(new Vector3(node.dRotation.X, node.dRotation.Y, newValue));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(node.dRotation.X, node.dRotation.Y, newValue);
                                     break;
                             }
+                            Vector3 rRotNew = ToRadian(dRotNew);
+                            Quaternion newValues = ToQuaternion(rRotNew);
 
                             // Generates a new Quaternion, so all rotation values need updating.
-                            m.WriteMemory(node.nodeAddress, "float", newValues.X.ToString());
-                            m.WriteMemory(node.nodeAddress + "+0x4", "float", newValues.Y.ToString());
-                            m.WriteMemory(node.nodeAddress + "+0x8", "float", newValues.Z.ToString());
-                            m.WriteMemory(node.nodeAddress + "+0xC", "float", newValues.W.ToString());
+                            m.WriteMemory(node.nodeAddress, "float", newValues.X.ToString("0.00000"));
+                            m.WriteMemory(node.nodeAddress + "+0x4", "float", newValues.Y.ToString("0.00000"));
+                            m.WriteMemory(node.nodeAddress + "+0x8", "float", newValues.Z.ToString("0.00000"));
+                            m.WriteMemory(node.nodeAddress + "+0xC", "float", newValues.W.ToString("0.00000"));
 
                             // Add changes made to change list
-                            AddNewChange("n", node.id.ToString(), "rotX", "492," + (node.id * 32), newValues.X.ToString("0.00"));
-                            AddNewChange("n", node.id.ToString(), "rotY", "492," + ((node.id * 32) + 4), newValues.Y.ToString("0.00"));
-                            AddNewChange("n", node.id.ToString(), "rotZ", "492," + ((node.id * 32) + 8), newValues.Z.ToString("0.00"));
-                            AddNewChange("n", node.id.ToString(), "rotW", "492," + ((node.id * 32) + 12), newValues.W.ToString("0.00"));
+                            AddNewChange("n", node.id.ToString(), "rotX", "492," + (node.id * 32), newValues.X.ToString("0.00000"));
+                            AddNewChange("n", node.id.ToString(), "rotY", "492," + ((node.id * 32) + 4), newValues.Y.ToString("0.00000"));
+                            AddNewChange("n", node.id.ToString(), "rotZ", "492," + ((node.id * 32) + 8), newValues.Z.ToString("0.00000"));
+                            AddNewChange("n", node.id.ToString(), "rotW", "492," + ((node.id * 32) + 12), newValues.W.ToString("0.00000"));
                             
                         }
                         // Translation
@@ -864,12 +874,12 @@ namespace InfiniteRuntimeModelEditor
                             AddNewChange("n", node.id.ToString(), "dfp", "64," + ((node.id * 124) + 92), newValue.ToString("0.00"));
                         }
 
-                        NodeStruct newNode = UpdateNode(node);
-                        UpdateNodes(newNode);
+                        UpdateNode(node);
+                        UpdateNodes(node);
                     }
                     else if (objType == "m")
                     {
-                        MarkerStruct marker = markers[index];
+                        ModelMarker marker = markers[index];
                         string markerAdd = marker.address;
                         float newValue = float.Parse(textBox.Text);
 
@@ -914,23 +924,28 @@ namespace InfiniteRuntimeModelEditor
                         // Rotation
                         else if (updateType == "rotX" || updateType == "rotY" || updateType == "rotZ")
                         {
-                            Quaternion newValues;
-                            Vector3 rRotNew;
+                            Vector3 dRotNew = new Vector3();
                             switch (updateType)
                             {
                                 case "rotX":
-                                    rRotNew = ToRadian(new Vector3(newValue, marker.dRotation.Y, marker.dRotation.Z));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(newValue, marker.dRotation.Y, marker.dRotation.Z);
                                     break;
                                 case "rotY":
-                                    rRotNew = ToRadian(new Vector3(marker.dRotation.X, newValue, marker.dRotation.Z));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(marker.dRotation.X, newValue, marker.dRotation.Z);
                                     break;
                                 case "rotZ":
-                                    rRotNew = ToRadian(new Vector3(marker.dRotation.X, marker.dRotation.Y, newValue));
-                                    newValues = ToQuaternion(rRotNew);
+                                    dRotNew = new Vector3(marker.dRotation.X, marker.dRotation.Y, newValue);
                                     break;
                             }
+                            Vector3 rRotNew = ToRadian(dRotNew);
+                            Quaternion newValues = ToQuaternion(rRotNew);
+
+                            Debug.WriteLine("-START-");
+                            Debug.WriteLine("Degrees - X:{0}, Y:{1}, Z:{2}", dRotNew.X.ToString("0.00"), dRotNew.Y.ToString("0.00"), dRotNew.Z.ToString("0.00"));
+                            Debug.WriteLine("Radians - X:{0}, Y:{1}, Z:{2}", rRotNew.X.ToString("0.00"), rRotNew.Y.ToString("0.00"), rRotNew.Z.ToString("0.00"));
+                            Debug.WriteLine("Quaternions - X:{0}, Y:{1}, Z:{2}, W:{3}", newValues.X.ToString("0.00"), newValues.Y.ToString("0.00"), newValues.Z.ToString("0.00"), newValues.W.ToString("0.00"));
+                            Debug.WriteLine("-END-");
+
                             m.WriteMemory(markerAdd + "+0x18", "float", newValues.X.ToString());
                             m.WriteMemory(markerAdd + "+0x1C", "float", newValues.Y.ToString());
                             m.WriteMemory(markerAdd + "+0x20", "float", newValues.Z.ToString());
@@ -942,8 +957,8 @@ namespace InfiniteRuntimeModelEditor
                             AddNewChange("m", marker.id.ToString(), "rotW", "104," + ((marker.groupID * 24) + 4) + "," + ((marker.groupInd * 56) + 36), newValues.W.ToString("0.00"));
                         }
 
-                        MarkerStruct newMarker = UpdateMarker(marker);
-                        UpdateMarkers(newMarker);
+                        UpdateMarker(marker);
+                        UpdateMarkers(marker);
                     }
                 }
             }
@@ -953,18 +968,18 @@ namespace InfiniteRuntimeModelEditor
             }
         }
 
-        private void UpdateNodes(NodeStruct node)
+        private void UpdateNodes(ModelNode node)
         {
             if (node.parentNode.ToString("X") == "FFFF")
             {
                 node.cube.Width = node.scale;
                 node.cube.Length = node.scale;
                 node.cube.Height = node.scale;
-                node.cube.Center = node.center;
+                node.cube.Center = new Point3D(node.translation.X, node.translation.Y, node.translation.Z);
             }
             else
             {
-                NodeStruct parentNode = nodes[node.parentNode];
+                ModelNode parentNode = nodes[node.parentNode];
 
                 // Cube scale
                 node.cube.Width = node.scale * parentNode.cube.Width;
@@ -1007,7 +1022,7 @@ namespace InfiniteRuntimeModelEditor
                     {
                         BoxVisual3D child = child1 as BoxVisual3D;
                         int childInd = int.Parse(child.GetName());
-                        NodeStruct childStruct = nodes[childInd];
+                        ModelNode childStruct = nodes[childInd];
 
                         UpdateNodes(childStruct);
                     }
@@ -1015,7 +1030,7 @@ namespace InfiniteRuntimeModelEditor
                     {
                         ArrowVisual3D child = child1 as ArrowVisual3D;
                         int childInd = int.Parse(child.GetName());
-                        MarkerStruct childStruct = markers[childInd];
+                        ModelMarker childStruct = markers[childInd];
 
                         UpdateMarkers(childStruct);
                     }
@@ -1023,9 +1038,9 @@ namespace InfiniteRuntimeModelEditor
             }
         }
 
-        private void UpdateMarkers(MarkerStruct marker)
+        private void UpdateMarkers(ModelMarker marker)
         {
-            NodeStruct parentNode = nodes[marker.parentNode];
+            ModelNode parentNode = nodes[marker.parentNode];
             marker.arrow.Direction = new Vector3D()
             {
                 X = (marker.direction.X + marker.arrow.Origin.X) * parentNode.inverseV.X,
@@ -1062,21 +1077,17 @@ namespace InfiniteRuntimeModelEditor
             marker.arrow.Transform = arrowTransform;
         }
 
-        private NodeStruct UpdateNode(NodeStruct node)
+        private void UpdateNode(ModelNode node)
         {
-            NodeStruct newNode = new NodeStruct();
             string nodeOffset = (node.id * 32).ToString("X");
             string nodeAdd = m.Get64BitCode(renderAddress + "+0x1EC,0x" + nodeOffset).ToString("X");
 
             string nodeInvOff = (node.id * 92).ToString("X");
             string nodeInvAdd = m.Get64BitCode(modelAddress + "+0x240,0x" + nodeInvOff).ToString("X");
 
-            string nodeParentAdd = m.Get64BitCode(renderAddress + "+0x40,0x4").ToString("X");
-            int nodeParent = m.Read2Byte(nodeParentAdd + "+0x" + (node.id * 124).ToString("X"));
-
             float scale = m.ReadFloat(nodeAdd + "+0x1C");
-            Vector3 translation = new Vector3(m.ReadFloat(nodeAdd + "+0x10"), m.ReadFloat(nodeAdd + "+0x14"), m.ReadFloat(nodeAdd + "+0x18"));
-            Vector3 inverse = new Vector3(m.ReadFloat(nodeInvAdd + "+0x2C"), m.ReadFloat(nodeInvAdd + "+0x3C"), m.ReadFloat(nodeInvAdd + "+0x4C"));
+            Vector3 translation = new Vector3(m.ReadFloat(nodeAdd + "+0x10", round: false), m.ReadFloat(nodeAdd + "+0x14", round: false), m.ReadFloat(nodeAdd + "+0x18", round: false));
+            Vector3 inverse = new Vector3(m.ReadFloat(nodeInvAdd + "+0x2C", round: false), m.ReadFloat(nodeInvAdd + "+0x3C", round: false), m.ReadFloat(nodeInvAdd + "+0x4C", round: false));
             Vector3 inverseV = new Vector3(1, 1, 1);
             if (inverse.X < 0)
                 inverseV.X = -1;
@@ -1084,91 +1095,45 @@ namespace InfiniteRuntimeModelEditor
                 inverseV.Y = -1;
             if (inverse.Z < 0)
                 inverseV.Z = -1;
-            Point3D center = new Point3D(translation.X * inverseV.X * inverseV.X, translation.Y * inverseV.Y * inverseV.Y, translation.Z * inverseV.Z * inverseV.Z);
-            Quaternion qRotation = new Quaternion(m.ReadFloat(nodeAdd), m.ReadFloat(nodeAdd + "+0x4"), m.ReadFloat(nodeAdd + "+0x8"), m.ReadFloat(nodeAdd + "+0xC"));
+            Quaternion qRotation = new Quaternion(m.ReadFloat(nodeAdd, round: false), m.ReadFloat(nodeAdd + "+0x4", round: false), m.ReadFloat(nodeAdd + "+0x8", round: false), m.ReadFloat(nodeAdd + "+0xC", round: false));
             Vector3 rRotation = ToEulerAngles(qRotation);
             Vector3 dRotation = ToDegree(rRotation);
 
-            Vector3 invForward = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 40).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 44).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 48).ToString("X")));
-            Vector3 invLeft = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 52).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 56).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 60).ToString("X")));
-            Vector3 invUp = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 64).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 68).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 72).ToString("X")));
-            Vector3 invPosition = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 76).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 80).ToString("X")), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 84).ToString("X")));
-            float invScale = m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 88).ToString("X"));
-            float DFP = m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"));
+            Vector3 invForward = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 40).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 44).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 48).ToString("X"), round: false));
+            Vector3 invLeft = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 52).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 56).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 60).ToString("X"), round: false));
+            Vector3 invUp = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 64).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 68).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 72).ToString("X"), round: false));
+            Vector3 invPosition = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 76).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 80).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 84).ToString("X"), round: false));
+            float invScale = m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 88).ToString("X"), round: false);
+            float DFP = m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), round: false);
 
-            // Create struct
-            newNode.id = node.id;
-            newNode.parentNode = nodeParent;
-            newNode.name = node.name;
-            newNode.scale = scale;
-            newNode.material = node.material;
-            newNode.nodeAddress = nodeAdd;
-            newNode.nodeAddress2 = node.nodeAddress2;
-            newNode.nodeInvAddress = nodeInvAdd;
-            newNode.translation = translation;
-            newNode.inverse = inverse;
-            newNode.inverseV = inverseV;
-            newNode.center = center;
-            newNode.qRotation = qRotation;
-            newNode.rRotation = rRotation;
-            newNode.dRotation = dRotation;
-            newNode.oRot = node.oRot;
-            newNode.oTran = node.oTran;
-            newNode.oScale = node.oScale;
-            newNode.invForward = invForward;
-            newNode.invLeft = invLeft;
-            newNode.invUp = invUp;
-            newNode.invPosition = invPosition;
-            newNode.invScale = invScale;
-            newNode.DFP = DFP;
-            newNode.oInvForward = node.oInvForward;
-            newNode.oInvLeft = node.oInvLeft;
-            newNode.oInvUp = node.oInvUp;
-            newNode.oInvPosition = node.oInvPosition;
-            newNode.oInvScale = node.oInvScale;
-            newNode.oDFP = node.oDFP;
-            newNode.item = node.item;
-            newNode.cube = node.cube;
-
-            TreeViewItem item = node.item;
-            item.Tag = newNode;
-
-            nodes.Remove(node.id);
-            nodes.Add(node.id,newNode);
-
-            return newNode;
+            node.nodeAddress = nodeAdd;
+            node.nodeInvAddress = nodeInvAdd;
+            node.translation = translation;
+            node.qRotation = qRotation;
+            node.rRotation = rRotation;
+            node.dRotation = dRotation;
+            node.scale = scale;
+            node.invForward = invForward;
+            node.invLeft = invLeft;
+            node.invUp = invUp;
+            node.invPosition = invPosition;
+            node.invScale = invScale;
+            node.DFP = DFP;
+            node.inverse = inverse;
+            node.inverseV = inverseV;
         }
 
-        private MarkerStruct UpdateMarker(MarkerStruct marker)
+        private void UpdateMarker(ModelMarker marker)
         {
             Vector3 markerTrans = new Vector3(m.ReadFloat(marker.address + "+0xC"), m.ReadFloat(marker.address + "+0x10"), m.ReadFloat(marker.address + "+0x14"));
             Quaternion markerRotation = new Quaternion(m.ReadFloat(marker.address + "+0x18"), m.ReadFloat(marker.address + "+0x1C"), m.ReadFloat(marker.address + "+0x20"), m.ReadFloat(marker.address + "+0x24"));
             Vector3 markerDirection = new Vector3(m.ReadFloat(marker.address + "+0x2C"), m.ReadFloat(marker.address + "+0x30"), m.ReadFloat(marker.address + "+0x34"));
 
-            MarkerStruct newMarker = new MarkerStruct();
-            newMarker.id = marker.id;
-            newMarker.groupID = marker.groupID;
-            newMarker.groupInd = marker.groupInd;
-            newMarker.parentNode = marker.parentNode;
-            newMarker.groupName = marker.groupName;
-            newMarker.address = marker.address;
-            newMarker.scale = marker.scale;
-            newMarker.translation = markerTrans;
-            newMarker.direction = markerDirection;
-            newMarker.qRotation = markerRotation;
-            newMarker.rRotation = ToEulerAngles(markerRotation);
-            newMarker.dRotation = ToDegree(newMarker.rRotation);
-            newMarker.oTran = marker.oTran;
-            newMarker.oDir = marker.oDir;
-            newMarker.oRot = marker.oRot;
-            newMarker.item = marker.item;
-            newMarker.arrow = marker.arrow;
-            marker.item.Tag = newMarker;
-
-            markers.Remove(marker.id);
-            markers.Add(marker.id, newMarker);
-
-            return newMarker;
+            marker.translation = markerTrans;
+            marker.direction = markerDirection;
+            marker.qRotation = markerRotation;
+            marker.rRotation = ToEulerAngles(markerRotation);
+            marker.dRotation = ToDegree(marker.rRotation);
         }
         #endregion
 
@@ -1180,9 +1145,9 @@ namespace InfiniteRuntimeModelEditor
             var t = button.Tag.GetType();
             try
             {
-                if (t.Equals(typeof(NodeStruct)))
+                if (t.Equals(typeof(ModelNode)))
                 {
-                    NodeStruct node = (NodeStruct)button.Tag;
+                    ModelNode node = (ModelNode)button.Tag;
 
                     m.WriteMemory(node.nodeAddress, "float", node.oRot.X.ToString());
                     m.WriteMemory(node.nodeAddress + "+0x4", "float", node.oRot.Y.ToString());
@@ -1207,15 +1172,15 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 88).ToString("X"), "float", node.oInvScale.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), "float", node.oDFP.ToString());
 
-                    NodeStruct newNode = UpdateNode(node);
-                    UpdateNodes(newNode);
+                    UpdateNode(node);
+                    UpdateNodes(node);
 
-                    newNode.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
+                    node.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
                     statusText.Text = "Node reset...";
                 }
-                else if (t.Equals(typeof(MarkerStruct)))
+                else if (t.Equals(typeof(ModelMarker)))
                 {
-                    MarkerStruct marker = (MarkerStruct)button.Tag;
+                    ModelMarker marker = (ModelMarker)button.Tag;
 
                     m.WriteMemory(marker.address + "+0xC", "float", marker.oTran.X.ToString());
                     m.WriteMemory(marker.address + "+0x10", "float", marker.oTran.Y.ToString());
@@ -1228,9 +1193,9 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(marker.address + "+0x30", "float", marker.oDir.Y.ToString());
                     m.WriteMemory(marker.address + "+0x34", "float", marker.oDir.Z.ToString());
 
-                    MarkerStruct newMarker = UpdateMarker(marker);
-                    UpdateNodes(nodes[newMarker.parentNode]);
-                    newMarker.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
+                    UpdateMarker(marker);
+                    UpdateNodes(nodes[marker.parentNode]);
+                    marker.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
                     statusText.Text = "Marker reset...";
                 }
             }
@@ -1246,7 +1211,7 @@ namespace InfiniteRuntimeModelEditor
             propTab.Children.Clear();
             try
             {
-                foreach (NodeStruct node in nodes.Values)
+                foreach (ModelNode node in nodes.Values)
                 {
                     m.WriteMemory(node.nodeAddress, "float", node.oRot.X.ToString());
                     m.WriteMemory(node.nodeAddress + "+0x4", "float", node.oRot.Y.ToString());
@@ -1272,7 +1237,7 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), "float", node.oDFP.ToString());
                 }
 
-                foreach (MarkerStruct marker in markers.Values)
+                foreach (ModelMarker marker in markers.Values)
                 {
                     m.WriteMemory(marker.address + "+0xC", "float", marker.oTran.X.ToString());
                     m.WriteMemory(marker.address + "+0x10", "float", marker.oTran.Y.ToString());
@@ -1308,7 +1273,7 @@ namespace InfiniteRuntimeModelEditor
             {
                 if (mItem.IsChecked)
                 {
-                    foreach (NodeStruct node in nodes.Values)
+                    foreach (ModelNode node in nodes.Values)
                     {
                         node.cube.Visible = false;
                     }
@@ -1316,7 +1281,7 @@ namespace InfiniteRuntimeModelEditor
                 }
                 else
                 {
-                    foreach (NodeStruct node in nodes.Values)
+                    foreach (ModelNode node in nodes.Values)
                     {
                         node.cube.Visible = true;
                     }
@@ -1337,7 +1302,7 @@ namespace InfiniteRuntimeModelEditor
             {
                 if (mItem.IsChecked)
                 {
-                    foreach (MarkerStruct marker in markers.Values)
+                    foreach (ModelMarker marker in markers.Values)
                     {
                         marker.arrow.Visible = false;
                     }
@@ -1345,7 +1310,7 @@ namespace InfiniteRuntimeModelEditor
                 }
                 else
                 {
-                    foreach (MarkerStruct marker in markers.Values)
+                    foreach (ModelMarker marker in markers.Values)
                     {
                         marker.arrow.Visible = true;
                     }
@@ -1400,12 +1365,12 @@ namespace InfiniteRuntimeModelEditor
                 rotBlock.xSlider.Value = xValue;
                 rotBlock.ySlider.Value = yValue;
                 rotBlock.zSlider.Value = zValue;
-                rotBlock.xSlider.Minimum = -179.999;
-                rotBlock.ySlider.Minimum = -179.999;
-                rotBlock.zSlider.Minimum = -179.999;
-                rotBlock.xSlider.Maximum = 179.999;
-                rotBlock.ySlider.Maximum = 179.999;
-                rotBlock.zSlider.Maximum = 179.999;
+                rotBlock.xSlider.Minimum = -180;
+                rotBlock.ySlider.Minimum = -90;
+                rotBlock.zSlider.Minimum = -180;
+                rotBlock.xSlider.Maximum = 180;
+                rotBlock.ySlider.Maximum = 90;
+                rotBlock.zSlider.Maximum = 180;
                 rotBlock.xValue.TextChanged += Update;
                 rotBlock.yValue.TextChanged += Update;
                 rotBlock.zValue.TextChanged += Update;
@@ -1595,13 +1560,13 @@ namespace InfiniteRuntimeModelEditor
 
 
         #region Selections
-        private void ShowSelection(NodeStruct node, MarkerStruct marker)
+        private void ShowSelection(ModelNode node, ModelMarker marker)
         {
-            foreach (NodeStruct nodeStruct in nodes.Values)
+            foreach (ModelNode nodeStruct in nodes.Values)
             {
                 nodeStruct.cube.Material = new DiffuseMaterial(nodeStruct.material);
             }
-            foreach (MarkerStruct markerStruct in markers.Values)
+            foreach (ModelMarker markerStruct in markers.Values)
             {
                 markerStruct.arrow.Material = new DiffuseMaterial(Brushes.Red);
             }
@@ -1620,7 +1585,7 @@ namespace InfiniteRuntimeModelEditor
             }
         }
         
-        private void ShowSelectionChild(NodeStruct node)
+        private void ShowSelectionChild(ModelNode node)
         {
             BoxVisual3D parentCube = node.cube;
 
@@ -1668,7 +1633,7 @@ namespace InfiniteRuntimeModelEditor
             float cosy_cosp = (float)(1 - 2 * (q.Y * q.Y + q.Z * q.Z));
             float zAngle = (float)Math.Atan2(siny_cosp, cosy_cosp) * -1;
            
-            return new Vector3(xAngle, yAngle, zAngle);
+            return new Vector3((float)Math.Round(xAngle, 2), (float)Math.Round(yAngle, 2), (float)Math.Round(zAngle, 2));
         }
 
         public static Vector3 ToDegree(Vector3 r)
@@ -1686,24 +1651,24 @@ namespace InfiniteRuntimeModelEditor
             float yRad = (float)(d.Y * Math.PI / 180);
             float zRad = (float)(d.Z * Math.PI / 180);
 
-            return new Vector3(xRad, yRad, zRad);
+            return new Vector3((float)Math.Round(xRad, 2), (float)Math.Round(yRad, 2), (float)Math.Round(zRad, 2));
         }
 
         public static Quaternion ToQuaternion(Vector3 e)
         {
-            float cy = (float)Math.Cos(e.Z * 0.5f);
-            float sy = (float)Math.Sin(e.Z * 0.5f);
-            float cp = (float)Math.Cos(e.Y * 0.5f);
-            float sp = (float)Math.Sin(e.Y * 0.5f);
-            float cr = (float)Math.Cos(e.X * 0.5f);
-            float sr = (float)Math.Sin(e.X * 0.5f);
+            double cy = Math.Cos(e.Z * 0.5);
+            double sy = Math.Sin(e.Z * 0.5);
+            double cp = Math.Cos(e.Y * 0.5);
+            double sp = Math.Sin(e.Y * 0.5);
+            double cr = Math.Cos(e.X * 0.5);
+            double sr = Math.Sin(e.X * 0.5);
 
             Quaternion q = new Quaternion
             {
                 W = cr * cp * cy + sr * sp * sy * -1,
                 X = sr * cp * cy - cr * sp * sy * -1,
                 Y = cr * sp * cy + sr * cp * sy * -1,
-                Z = cr * cp * sy - sr * sp * cy * -1
+                Z = cr * cp * sy - sr * sp * cy * -1 
             };
 
             return q;
