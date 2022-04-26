@@ -109,10 +109,24 @@
                         </Grid>
                     </TabItem>
                     <TabItem Header="Node Tree" Style="{DynamicResource TabItemStyle}">
-                        <ScrollViewer>
-                            <TreeView Style="{DynamicResource TreeViewStyle}" x:Name="node_tree">
-                            </TreeView>
-                        </ScrollViewer>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="25"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Z_TextBlockStyle}" Text="Search: " VerticalAlignment="Center" Margin="3"/>
+                                <TextBox x:Name="Searchbox2" HorizontalAlignment="Stretch" Grid.Column="1" Height="20" TextChanged="Searchbox2_TextChanged"/>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1">
+                                <TreeView Style="{DynamicResource TreeViewStyle}" x:Name="node_tree">
+                                </TreeView>
+                            </ScrollViewer>
+                        </Grid>
                     </TabItem>
                 </TabControl>
                 <TabControl Grid.Row="1" Style="{DynamicResource TabControlStyle}">

@@ -279,10 +279,8 @@ namespace InfiniteRuntimeModelEditor
                         if (inverse.Z < 0)
                             inverseV.Z = -1;
 
-                        if (hashNames.ContainsKey(nodeHash))
-                        {
-                            nodeHash = hashNames[nodeHash];
-                        }
+                        
+                        
 
                         // Create struct
                         newNode.id = i;
@@ -329,7 +327,15 @@ namespace InfiniteRuntimeModelEditor
                         newNode.cube = cube;
 
                         // Set Item data
-                        item.Header = "Node: " + i + " (" + nodeHash + ")";
+                        if (hashNames.ContainsKey(nodeHash))
+                        {
+                            item.Header = "Node: " + i + " (" + nodeHash + ") - " + hashNames[nodeHash];
+                        }
+                        else
+                        {
+                            item.Header = "Node: " + i + " (" + nodeHash + ")";
+                        }
+
                         item.Tag = newNode;
                         item.Selected += LoadProperties;
                         item.Style = Resources["TreeViewItemStyle"] as Style;
@@ -397,12 +403,6 @@ namespace InfiniteRuntimeModelEditor
                             arrow.SetName(markerInd.ToString());
                             arrow.Material = new DiffuseMaterial(Brushes.OrangeRed);
 
-                            // Assign marker names
-                            if (hashNames.ContainsKey(markerName))
-                            {
-                                markerName = hashNames[markerName];
-                            }
-
                             // Create marker struct
                             ModelMarker newMarker = new ModelMarker();
                             newMarker.id = markerInd;
@@ -424,6 +424,16 @@ namespace InfiniteRuntimeModelEditor
                             newMarker.arrow = arrow;
 
                             markerItem.Tag = newMarker;
+
+                            if (hashNames.ContainsKey(markerName))
+                            {
+                                markerItem.Header = "Marker: " + markerInd + " (" + markerName + ") - " + hashNames[markerName];
+                            }
+                            else
+                            {
+                                markerItem.Header = "Marker: " + markerInd + " (" + markerName + ")";
+                            }
+
                             markerItem.Header = "Marker: " + markerInd + " (" + markerName + ")";
                             markerItem.Selected += LoadProperties;
                             markerItem.Style = Resources["TreeViewItemStyle"] as Style;
@@ -1948,6 +1958,67 @@ namespace InfiniteRuntimeModelEditor
                     }
                 }
             }
+        }
+
+        private void Searchbox2_TextChanged(object? sender, TextChangedEventArgs? e)
+        {
+            string search = Searchbox2.Text;
+            foreach (TreeViewItem tc in node_tree.Items)
+            {
+                SearchBox2Search(tc, search);
+            }
+        }
+
+        private void SearchBox2Search(TreeViewItem tv, string search)
+        {
+            if (string.IsNullOrEmpty(search) || string.IsNullOrWhiteSpace(search))
+            {
+                foreach (TreeViewItem tc in tv.Items)
+                {
+                    tc.Visibility = Visibility.Visible;
+                    SearchBox2Search(tc, search);
+                }
+            }
+            else if (!tv.Header.ToString().ToLower().Contains(search.ToLower()))
+            {
+                if (tv.HasItems)
+                {
+                    tv.IsExpanded = true;
+                }
+                else
+                {
+                    tv.Visibility = Visibility.Collapsed;
+                }
+                foreach (TreeViewItem tc in tv.Items)
+                {
+                    if (tc.Header.ToString().ToLower().Contains(search.ToLower()))
+                    {
+                        HideAllItems(tc);
+                    }
+                    if (tc.HasItems)
+                    {
+                        SearchBox2Search(tc, search);
+                    }
+                }
+            }
+            
+        }
+
+        private void HideAllItems(TreeViewItem ignore)
+        {
+            var tpTest = ignore.Parent;
+            Type t = tpTest.GetType();
+            if (t.Equals(typeof(TreeViewItem)))
+            {
+                TreeViewItem tp = tpTest as TreeViewItem;
+                foreach (TreeViewItem tc in tp.Items)
+                {
+                    tc.Visibility = Visibility.Collapsed;
+                    HideAllItems(tp);
+                }
+                tp.Visibility = Visibility.Visible;
+            }
+            ignore.Visibility = Visibility.Visible;
         }
 
         public async Task ScanMem()
