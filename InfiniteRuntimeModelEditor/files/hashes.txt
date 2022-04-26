@@ -28,3 +28,5 @@ E75F7524 : mong_fr_tire_p
 CDB7E955 : banshee_lf_wing
 B6487C06 : banshee_lb_wing
 E45E4E68 : banshee_rf_wing
+FEB6D1D5 : ghost_back_force
+96FF5D70 : ghost_front_force

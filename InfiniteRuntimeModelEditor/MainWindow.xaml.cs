@@ -120,6 +120,9 @@ namespace InfiniteRuntimeModelEditor
             public Vector3 dRotation;
             public float scale;
 
+            public Quaternion invQRotation;
+            public Vector3 invRRotation;
+            public Vector3 invDRotation;
             public Vector3 invForward;
             public Vector3 invLeft;
             public Vector3 invUp;
@@ -129,10 +132,10 @@ namespace InfiniteRuntimeModelEditor
 
             public Vector3 inverse;
             public Vector3 inverseV;
-
             public Quaternion oRot;
             public Vector3 oTran;
             public float oScale;
+            public Quaternion oInvRotation;
             public Vector3 oInvForward;
             public Vector3 oInvLeft;
             public Vector3 oInvUp;
@@ -256,8 +259,9 @@ namespace InfiniteRuntimeModelEditor
                         Vector3 rRotation = ToEulerAngles(qRotation);
                         Vector3 dRotation = ToDegree(rRotation);
                         float scale = m.ReadFloat(nodeRuntimeAdd + "+0x1C");
-                        
+
                         // Node values
+                        Quaternion invRotation = new Quaternion(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 24).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 28).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 32).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 36).ToString("X"), round: false));
                         Vector3 invForward = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 40).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 44).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 48).ToString("X"), round: false));
                         Vector3 invLeft = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 52).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 56).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 60).ToString("X"), round: false));
                         Vector3 invUp = new Vector3(m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 64).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 68).ToString("X"), round: false), m.ReadFloat(nodeAdd + "+0x" + ((i * 124) + 72).ToString("X"), round: false));
@@ -295,6 +299,9 @@ namespace InfiniteRuntimeModelEditor
                         newNode.dRotation = dRotation;
                         newNode.scale = scale;
 
+                        newNode.invQRotation = invRotation;
+                        newNode.invRRotation = ToEulerAngles(invRotation);
+                        newNode.invDRotation = ToDegree(newNode.invRRotation);
                         newNode.invForward = invForward;
                         newNode.invLeft = invLeft;
                         newNode.invUp = invUp;
@@ -309,6 +316,7 @@ namespace InfiniteRuntimeModelEditor
                         newNode.oTran = translation;
                         newNode.oScale = scale;
 
+                        newNode.oInvRotation = invRotation;
                         newNode.oInvForward = invForward;
                         newNode.oInvLeft = invLeft;
                         newNode.oInvUp = invUp;
@@ -538,7 +546,8 @@ namespace InfiniteRuntimeModelEditor
                         CreateValueBlock("translation", node.translation.X * node.inverseV.X * node.inverseV.X, node.translation.Y * node.inverseV.Y * node.inverseV.Y, node.translation.Z * node.inverseV.Z * node.inverseV.Z, "n", node.id);
                         CreateValueBlock("rotation", node.dRotation.X, node.dRotation.Y, node.dRotation.Z, "n", node.id);
                         CreateScaleBlock(node.scale, "n", node.id);
-                        
+
+                        CreateInvBlock("Rotations", node.invDRotation.X, node.invDRotation.Y, node.invDRotation.Z, node.id);
                         CreateInvBlock("Dimensions", node.invForward.Y, node.invLeft.Z, node.invPosition.X, node.id);
                         CreateInvBlock("Translations", node.invPosition.Y, node.invPosition.Z, node.scale, node.id);
                         CreateInvBlock("Skew From Center", node.invUp.Y, node.invUp.Z, node.invLeft.X, node.id);
@@ -873,6 +882,37 @@ namespace InfiniteRuntimeModelEditor
                             m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), "float", newValue.ToString());
                             AddNewChange("n", node.id.ToString(), "dfp", "64," + ((node.id * 124) + 92), newValue.ToString("0.00"));
                         }
+                        else if (updateType == "invRotationsX" || updateType == "invRotationsY" || updateType == "invRotationsZ")
+                        {
+                            Vector3 dRotNew = new Vector3();
+                            switch (updateType)
+                            {
+                                case "invRotationsX":
+                                    dRotNew = new Vector3(newValue, node.invDRotation.Y, node.invDRotation.Z);
+                                    break;
+                                case "invRotationsY":
+                                    dRotNew = new Vector3(node.invDRotation.X, newValue, node.invDRotation.Z);
+                                    break;
+                                case "invRotationsZ":
+                                    dRotNew = new Vector3(node.invDRotation.X, node.invDRotation.Y, newValue);
+                                    break;
+                            }
+                            Vector3 rRotNew = ToRadian(dRotNew);
+                            Quaternion newValues = ToQuaternion(rRotNew);
+
+                            // Generates a new Quaternion, so all rotation values need updating.
+                            m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 24).ToString("X"), "float", newValues.X.ToString());
+                            m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 28).ToString("X"), "float", newValues.Y.ToString());
+                            m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 32).ToString("X"), "float", newValues.Z.ToString());
+                            m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 36).ToString("X"), "float", newValues.W.ToString());
+
+                            // Add changes made to change list
+                            AddNewChange("n", node.id.ToString(), "invRotationsX", "64," + ((node.id * 124) + 24), newValues.X.ToString("0.0000"));
+                            AddNewChange("n", node.id.ToString(), "invRotationsY", "64," + ((node.id * 124) + 28), newValues.Y.ToString("0.0000"));
+                            AddNewChange("n", node.id.ToString(), "invRotationsZ", "64," + ((node.id * 124) + 32), newValues.Z.ToString("0.0000"));
+                            AddNewChange("n", node.id.ToString(), "invRotationsW", "64," + ((node.id * 124) + 36), newValues.W.ToString("0.0000"));
+
+                        }
 
                         UpdateNode(node);
                         UpdateNodes(node);
@@ -1099,6 +1139,7 @@ namespace InfiniteRuntimeModelEditor
             Vector3 rRotation = ToEulerAngles(qRotation);
             Vector3 dRotation = ToDegree(rRotation);
 
+            Quaternion invRotation = new Quaternion(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 24).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 28).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 32).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 36).ToString("X"), round: false));
             Vector3 invForward = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 40).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 44).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 48).ToString("X"), round: false));
             Vector3 invLeft = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 52).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 56).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 60).ToString("X"), round: false));
             Vector3 invUp = new Vector3(m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 64).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 68).ToString("X"), round: false), m.ReadFloat(node.nodeAddress2 + "+0x" + ((node.id * 124) + 72).ToString("X"), round: false));
@@ -1113,6 +1154,9 @@ namespace InfiniteRuntimeModelEditor
             node.rRotation = rRotation;
             node.dRotation = dRotation;
             node.scale = scale;
+            node.invQRotation = invRotation;
+            node.invRRotation = ToEulerAngles(invRotation);
+            node.invDRotation = ToDegree(node.invRRotation);
             node.invForward = invForward;
             node.invLeft = invLeft;
             node.invUp = invUp;
@@ -1171,7 +1215,10 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 84).ToString("X"), "float", node.oInvPosition.Z.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 88).ToString("X"), "float", node.oInvScale.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), "float", node.oDFP.ToString());
-
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 24).ToString("X"), "float", node.oInvRotation.X.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 28).ToString("X"), "float", node.oInvRotation.Y.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 32).ToString("X"), "float", node.oInvRotation.Z.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 36).ToString("X"), "float", node.oInvRotation.W.ToString());
                     UpdateNode(node);
                     UpdateNodes(node);
 
@@ -1235,6 +1282,10 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 84).ToString("X"), "float", node.oInvPosition.Z.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 88).ToString("X"), "float", node.oInvScale.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 92).ToString("X"), "float", node.oDFP.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 24).ToString("X"), "float", node.oInvRotation.X.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 28).ToString("X"), "float", node.oInvRotation.Y.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 32).ToString("X"), "float", node.oInvRotation.Z.ToString());
+                    m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 36).ToString("X"), "float", node.oInvRotation.W.ToString());
                 }
 
                 foreach (ModelMarker marker in markers.Values)
@@ -1542,6 +1593,40 @@ namespace InfiniteRuntimeModelEditor
 
                 otherPropTab.Children.Add(newBlock);
             }
+            else if (description == "Rotations")
+            {
+                translationBlock newBlock = new translationBlock();
+                newBlock.title.Text = description;
+                newBlock.xValue.Tag = "n:invRotationsX:" + index;
+                newBlock.yValue.Tag = "n:invRotationsY:" + index;
+                newBlock.zValue.Tag = "n:invRotationsZ:" + index;
+                newBlock.value1.Text = "X";
+                newBlock.value2.Text = "Y";
+                newBlock.value3.Text = "Z";
+                newBlock.xValue.Text = Value1.ToString("0.000");
+                newBlock.yValue.Text = Value2.ToString("0.000");
+                newBlock.zValue.Text = Value3.ToString("0.000");
+                newBlock.xSlider.Value = Value1;
+                newBlock.ySlider.Value = Value2;
+                newBlock.zSlider.Value = Value3;
+                newBlock.xSlider.Minimum = -180;
+                newBlock.xSlider.Maximum = 180;
+                newBlock.ySlider.Minimum = -90;
+                newBlock.ySlider.Maximum = 90;
+                newBlock.zSlider.Minimum = -180;
+                newBlock.zSlider.Maximum = 180;
+                newBlock.xValue.TextChanged += Update;
+                newBlock.yValue.TextChanged += Update;
+                newBlock.zValue.TextChanged += Update;
+                newBlock.xValue.LostFocus += ValueChange;
+                newBlock.yValue.LostFocus += ValueChange;
+                newBlock.zValue.LostFocus += ValueChange;
+                newBlock.xSlider.ValueChanged += SliderChange;
+                newBlock.ySlider.ValueChanged += SliderChange;
+                newBlock.zSlider.ValueChanged += SliderChange;
+
+                otherPropTab.Children.Add(newBlock);
+            }
         }
 
         private void CreateSingleInvBlock(string title, float value, int index, string tagType)
@@ -1714,7 +1799,6 @@ namespace InfiniteRuntimeModelEditor
             node_tree.Items.Clear();
             markers.Clear();
             nodes.Clear();
-            hashNames.Clear();
             changes.Clear();
             materialInd = 0;
             TagsTree.Items.Clear();
