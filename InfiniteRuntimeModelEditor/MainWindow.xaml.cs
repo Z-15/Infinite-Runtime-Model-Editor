@@ -176,7 +176,7 @@ namespace InfiniteRuntimeModelEditor
             IEnumerable<string>? lines = System.IO.File.ReadLines(filename);
             foreach (string? line in lines)
             {
-                string[] hexString = line.Split(" : ");
+                string[] hexString = line.Split(":");
                 if (!hashNames.ContainsKey(hexString[0]))
                 {
                     hashNames.Add(hexString[0], hexString[1]);
