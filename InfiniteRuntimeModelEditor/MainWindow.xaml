@@ -124,11 +124,18 @@
                             </Grid>
                             <ScrollViewer Grid.Row="1">
                                 <TreeView Style="{DynamicResource TreeViewStyle}" x:Name="node_tree">
+                                    <TreeView.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Expand All" Click="ExpandAll"/>
+                                            <MenuItem Header="Collapse All" Click="CollapseAll"/>
+                                        </ContextMenu>
+                                    </TreeView.ContextMenu>
                                 </TreeView>
                             </ScrollViewer>
                         </Grid>
                     </TabItem>
                 </TabControl>
+                
                 <TabControl Grid.Row="1" Style="{DynamicResource TabControlStyle}">
                     <TabItem Header="Item Properties" Style="{DynamicResource TabItemStyle}">
                         <ScrollViewer>

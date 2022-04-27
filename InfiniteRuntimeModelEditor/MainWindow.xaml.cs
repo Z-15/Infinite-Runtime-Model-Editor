@@ -1337,6 +1337,11 @@ namespace InfiniteRuntimeModelEditor
                     foreach (ModelNode node in nodes.Values)
                     {
                         node.cube.Visible = false;
+                        if (!node.item.HasItems)
+                        {
+                            // This will be improved upon later...
+                            node.item.Visibility = Visibility.Collapsed;
+                        }
                     }
                     statusText.Text = "Nodes are now invisible...";
                 }
@@ -1345,6 +1350,7 @@ namespace InfiniteRuntimeModelEditor
                     foreach (ModelNode node in nodes.Values)
                     {
                         node.cube.Visible = true;
+                        node.item.Visibility = Visibility.Visible;
                     }
                     statusText.Text = "Nodes are now visible...";
                 }
@@ -1366,6 +1372,7 @@ namespace InfiniteRuntimeModelEditor
                     foreach (ModelMarker marker in markers.Values)
                     {
                         marker.arrow.Visible = false;
+                        marker.item.Visibility = Visibility.Collapsed;
                     }
                     statusText.Text = "Nodes are now invisible...";
                 }
@@ -1374,6 +1381,7 @@ namespace InfiniteRuntimeModelEditor
                     foreach (ModelMarker marker in markers.Values)
                     {
                         marker.arrow.Visible = true;
+                        marker.item.Visibility = Visibility.Visible;
                     }
                     statusText.Text = "Markers are now visible...";
                 }
@@ -1771,6 +1779,147 @@ namespace InfiniteRuntimeModelEditor
         #endregion
 
 
+        #region Searching
+        private void Searchbox_TextChanged(object? sender, TextChangedEventArgs? e)
+        {
+            string search = Searchbox.Text;
+            foreach (TreeViewItem? tv in TagsTree.Items)
+            {
+                if (!tv.Header.ToString().Contains(search.ToLower()))
+                {
+                    tv.Visibility = Visibility.Collapsed;
+                    foreach (TreeViewItem tc in tv.Items)
+                    {
+                        if (tc.Header.ToString().Contains(search))
+                        {
+                            tc.Visibility = Visibility.Visible;
+                            tv.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            tc.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                }
+                else
+                {
+                    tv.Visibility = Visibility.Visible;
+                    foreach (TreeViewItem tc in tv.Items)
+                    {
+                        tc.Visibility = Visibility.Visible;
+                    }
+                }
+            }
+        }
+
+        private void Searchbox2_TextChanged(object? sender, TextChangedEventArgs? e)
+        {
+            string search = Searchbox2.Text;
+            foreach (TreeViewItem tv in node_tree.Items)
+            {
+                SearchBox2Search(tv, search);
+            }
+        }
+
+        private void SearchBox2Search(TreeViewItem tv, string search)
+        {
+            if (string.IsNullOrEmpty(search) || string.IsNullOrWhiteSpace(search))
+            {
+                foreach (TreeViewItem tc in tv.Items)
+                {
+                    tc.Visibility = Visibility.Visible;
+                    tv.Visibility = Visibility.Visible;
+                    SearchBox2Search(tc, search);
+                }
+            }
+            else if (!tv.Header.ToString().ToLower().Contains(search.ToLower()))
+            {
+                if (tv.HasItems)
+                {
+                    tv.IsExpanded = true;
+                    foreach (TreeViewItem tc in tv.Items)
+                    {
+                        if (tc.HasItems && !tc.Header.ToString().ToLower().Contains(search.ToLower()))
+                        {
+                            SearchBox2Search(tc, search);
+                        }
+                        else if (tc.Header.ToString().ToLower().Contains(search.ToLower()))
+                        {
+                            tv.Visibility = Visibility.Visible;
+                            tc.Visibility = Visibility.Visible;
+                            tc.IsExpanded = false;
+                            HideOthers(tc);
+                        }
+                        else
+                        {
+                            tc.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HideOthers(TreeViewItem tv)
+        {
+            var test = tv.Parent;
+            Type t = test.GetType();
+            if (t.Equals(typeof(TreeViewItem)))
+            {
+                // Get parent
+                TreeViewItem pTv = (TreeViewItem)test;
+
+                foreach (TreeViewItem tc in pTv.Items)
+                {
+                    tc.Visibility = Visibility.Collapsed;
+                }
+                tv.Visibility = Visibility.Visible;
+                HideOthers(pTv);
+            }
+        }
+        #endregion
+
+
+        #region Context Menu Options
+        private void ExpandAll(object sender, RoutedEventArgs e)
+        {
+            foreach (TreeViewItem tv in node_tree.Items)
+            {
+                ExpCollAll(1, tv);
+            }
+        }
+
+        private void CollapseAll(object sender, RoutedEventArgs e)
+        {
+            foreach (TreeViewItem tv in node_tree.Items)
+            {
+                ExpCollAll(0, tv);
+            }
+        }
+
+        private void ExpCollAll(int t, TreeViewItem tv)
+        {
+            if (tv.HasItems)
+            {
+                if (t == 0)
+                {
+                    tv.IsExpanded = false;
+                }
+                else if (t == 1)
+                {
+                    tv.IsExpanded = true;
+                }
+                foreach (TreeViewItem tc in tv.Items)
+                {
+                    if (tc.HasItems)
+                    {
+                        ExpCollAll(t, tc);
+                    }
+                }
+            }
+        }
+        #endregion
+
+
         #region Modified IRTV Tag Loader & Other stuff
         // Credit for the majority of this section goes to Gamergotten and all those who've contributed to the github.
         // https://github.com/Gamergotten/Infinite-runtime-tagviewer
@@ -1926,103 +2075,6 @@ namespace InfiniteRuntimeModelEditor
             }));
             if (!is_silent)
                 await Loadtags();
-        }
-
-        private void Searchbox_TextChanged(object? sender, TextChangedEventArgs? e)
-        {
-            string search = Searchbox.Text;
-            foreach (TreeViewItem? tv in TagsTree.Items)
-            {
-                if (!tv.Header.ToString().Contains(search.ToLower()))
-                {
-                    tv.Visibility = Visibility.Collapsed;
-                    foreach (TreeViewItem tc in tv.Items)
-                    {
-                        if (tc.Header.ToString().Contains(search))
-                        {
-                            tc.Visibility = Visibility.Visible;
-                            tv.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            tc.Visibility = Visibility.Collapsed;
-                        }
-                    }
-                }
-                else
-                {
-                    tv.Visibility = Visibility.Visible;
-                    foreach (TreeViewItem tc in tv.Items)
-                    {
-                        tc.Visibility = Visibility.Visible;
-                    }
-                }
-            }
-        }
-
-        private void Searchbox2_TextChanged(object? sender, TextChangedEventArgs? e)
-        {
-            string search = Searchbox2.Text;
-            foreach (TreeViewItem tv in node_tree.Items)
-            {
-                SearchBox2Search(tv, search);
-            }
-        }
-
-        private void SearchBox2Search(TreeViewItem tv, string search)
-        {
-            if (string.IsNullOrEmpty(search) || string.IsNullOrWhiteSpace(search))
-            {
-                foreach (TreeViewItem tc in tv.Items)
-                {
-                    tc.Visibility = Visibility.Visible;
-                    tv.Visibility = Visibility.Visible;
-                    SearchBox2Search(tc, search);
-                }
-            }
-            else if (!tv.Header.ToString().ToLower().Contains(search.ToLower()))
-            {
-                if (tv.HasItems)
-                {
-                    tv.IsExpanded = true;
-                    foreach (TreeViewItem tc in tv.Items)
-                    {
-                        if (tc.HasItems && !tc.Header.ToString().ToLower().Contains(search.ToLower()))
-                        {
-                            SearchBox2Search(tc, search);
-                        }
-                        else if (tc.Header.ToString().ToLower().Contains(search.ToLower()))
-                        {
-                            tv.Visibility = Visibility.Visible;
-                            tc.Visibility = Visibility.Visible;
-                            tc.IsExpanded = false;
-                            HideOthers(tc);
-                        }
-                        else
-                        {
-                            tc.Visibility = Visibility.Collapsed;
-                        }
-                    }
-                }
-            }
-        }
-
-        private void HideOthers(TreeViewItem tv)
-        {
-            var test = tv.Parent;
-            Type t = test.GetType();
-            if (t.Equals(typeof(TreeViewItem)))
-            {
-                // Get parent
-                TreeViewItem pTv = (TreeViewItem)test;
-                
-                foreach(TreeViewItem tc in pTv.Items)
-                {
-                    tc.Visibility = Visibility.Collapsed;
-                }
-                tv.Visibility = Visibility.Visible;
-                HideOthers(pTv);
-            }
         }
 
         public async Task ScanMem()
