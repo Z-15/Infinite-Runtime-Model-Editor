@@ -155,6 +155,7 @@ namespace InfiniteRuntimeModelEditor
             public string path;
             public string type;
             public string value;
+            public changeItem item;
         }
         
         #endregion
@@ -620,7 +621,7 @@ namespace InfiniteRuntimeModelEditor
         #endregion
 
 
-        #region Save
+        #region Save Mod
         private void SaveFile(object sender, RoutedEventArgs e)
         {
             try
@@ -664,11 +665,32 @@ namespace InfiniteRuntimeModelEditor
 
         private void AddNewChange(string objType, string objID, string updateType, string path, string value)
         {
+            string key = objID + ":" + tagID + ":" + objType + ":" + updateType;
+            changeItem newItem = new changeItem();
             // Prevents the same value from being added twice
-            if (changes.ContainsKey(objID + ":" + tagID + ":" + objType + ":" + updateType))
+            if (changes.ContainsKey(key))
             {
-                changes.Remove(objID + ":" + tagID + ":" + objType + ":" + updateType);
+                newItem = changes[key].item;
+                changes.Remove(key);
             }
+            else
+            {
+                newItem.remove.Click += RemoveChange;
+                changeList.Children.Add(newItem);
+            }
+
+            if (objType == "n")
+            {
+                newItem.item.Text = modelName.Text + ";N:" + objID;
+            }
+            else if (objType == "m")
+            {
+                newItem.item.Text = modelName.Text + ";M:" + objID;
+            }
+            
+            newItem.type.Text = updateType;
+            newItem.value.Text = value;
+            newItem.remove.Tag = key;
 
             // Creates a new change struct
             SaveChange newSave = new SaveChange();
@@ -677,52 +699,36 @@ namespace InfiniteRuntimeModelEditor
             newSave.path = path;
             newSave.type = "float";
             newSave.value = value;
+            newSave.item = newItem;
 
             // Add new change to dictionary
-            changes.Add(objID + ":" + tagID + ":" + objType + ":" + updateType, newSave);
+            changes.Add(key, newSave);
+        }
+
+        private void RemoveChange(object sender, RoutedEventArgs e)
+        {
+            Button remove = sender as Button;
+            try
+            {
+                changeList.Children.Remove(changes[remove.Tag.ToString()].item);
+                changes.Remove(remove.Tag.ToString());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         }
 
         private void ClearChanges(object sender, RoutedEventArgs e)
         {
             changes.Clear();
+            changeList.Children.Clear();
             statusText.Text = "Changes cleared...";
         }
         #endregion
 
 
         #region Changes and Updates
-        private void SliderChange(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Reflect change from slider to the value box
-                Slider slider = sender as Slider;
-                StackPanel parent = slider.Parent as StackPanel;
-                TextBox textBox = parent.Children[2] as TextBox;
-                textBox.Text = slider.Value.ToString("0.000");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-        }
-
-        private void ValueChange(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Reflect change from value box onto slider
-                TextBox textBox = sender as TextBox;
-                StackPanel parent = textBox.Parent as StackPanel;
-                Slider slider = parent.Children[1] as Slider;
-                slider.Value = float.Parse(textBox.Text);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-        }
-
         private void Update(object sender, RoutedEventArgs e)
         {
             TextBox textBox = sender as TextBox;
@@ -1232,6 +1238,20 @@ namespace InfiniteRuntimeModelEditor
                     UpdateNode(node);
                     UpdateNodes(node);
 
+                    foreach (KeyValuePair<string,SaveChange> saveKVP in changes)
+                    {
+                        string saveKey = saveKVP.Key;
+                        SaveChange saveChange = saveKVP.Value;
+                        changeItem saveItem = saveChange.item;
+
+                        // remove changes to node
+                        if (saveItem.item.Text.Contains(modelName.Text + ";N:" + node.id))
+                        {
+                            changeList.Children.Remove(saveItem);
+                            changes.Remove(saveKey);
+                        }
+                    }
+
                     node.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
                     statusText.Text = "Node reset...";
                 }
@@ -1252,6 +1272,21 @@ namespace InfiniteRuntimeModelEditor
 
                     UpdateMarker(marker);
                     UpdateNodes(nodes[marker.parentNode]);
+
+                    foreach (KeyValuePair<string, SaveChange> saveKVP in changes)
+                    {
+                        string saveKey = saveKVP.Key;
+                        SaveChange saveChange = saveKVP.Value;
+                        changeItem saveItem = saveChange.item;
+
+                        // remove changes to node
+                        if (saveItem.item.Text.Contains(modelName.Text + ";M:" + marker.id))
+                        {
+                            changeList.Children.Remove(saveItem);
+                            changes.Remove(saveKey);
+                        }
+                    }
+
                     marker.item.RaiseEvent(new RoutedEventArgs(TreeViewItem.SelectedEvent));
                     statusText.Text = "Marker reset...";
                 }
@@ -1296,6 +1331,20 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 28).ToString("X"), "float", node.oInvRotation.Y.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 32).ToString("X"), "float", node.oInvRotation.Z.ToString());
                     m.WriteMemory(node.nodeAddress2 + "+0x" + ((node.id * 124) + 36).ToString("X"), "float", node.oInvRotation.W.ToString());
+
+                    foreach (KeyValuePair<string, SaveChange> saveKVP in changes)
+                    {
+                        string saveKey = saveKVP.Key;
+                        SaveChange saveChange = saveKVP.Value;
+                        changeItem saveItem = saveChange.item;
+
+                        // remove changes to node
+                        if (saveItem.item.Text.Contains(modelName.Text + ";N:" + node.id))
+                        {
+                            changeList.Children.Remove(saveItem);
+                            changes.Remove(saveKey);
+                        }
+                    }
                 }
 
                 foreach (ModelMarker marker in markers.Values)
@@ -1310,6 +1359,20 @@ namespace InfiniteRuntimeModelEditor
                     m.WriteMemory(marker.address + "+0x2C", "float", marker.oDir.X.ToString());
                     m.WriteMemory(marker.address + "+0x30", "float", marker.oDir.Y.ToString());
                     m.WriteMemory(marker.address + "+0x34", "float", marker.oDir.Z.ToString());
+
+                    foreach (KeyValuePair<string, SaveChange> saveKVP in changes)
+                    {
+                        string saveKey = saveKVP.Key;
+                        SaveChange saveChange = saveKVP.Value;
+                        changeItem saveItem = saveChange.item;
+
+                        // remove changes to node
+                        if (saveItem.item.Text.Contains(modelName.Text + ";M:" + marker.id))
+                        {
+                            changeList.Children.Remove(saveItem);
+                            changes.Remove(saveKey);
+                        }
+                    }
                 }
 
 
@@ -1506,9 +1569,9 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xValue.Tag = "n:invForwardY:" + index;
                 newBlock.yValue.Tag = "n:invLeftZ:" + index;
                 newBlock.zValue.Tag = "n:invPositionX:" + index;
-                newBlock.value1.Text = "L";
-                newBlock.value2.Text = "W";
-                newBlock.value3.Text = "H";
+                newBlock.value1.Text = "L:";
+                newBlock.value2.Text = "W:";
+                newBlock.value3.Text = "H:";
                 newBlock.xValue.Text = Value1.ToString("0.000");
                 newBlock.yValue.Text = Value2.ToString("0.000");
                 newBlock.zValue.Text = Value3.ToString("0.000");
@@ -1534,9 +1597,9 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xValue.Tag = "n:invPositionY:" + index;
                 newBlock.yValue.Tag = "n:invPositionZ:" + index;
                 newBlock.zValue.Tag = "n:invScale:" + index;
-                newBlock.value1.Text = "X";
-                newBlock.value2.Text = "Y";
-                newBlock.value3.Text = "Z";
+                newBlock.value1.Text = "X:";
+                newBlock.value2.Text = "Y:";
+                newBlock.value3.Text = "Z:";
                 newBlock.xValue.Text = Value1.ToString("0.000");
                 newBlock.yValue.Text = Value2.ToString("0.000");
                 newBlock.zValue.Text = Value3.ToString("0.000");
@@ -1562,9 +1625,9 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xValue.Tag = "n:invUpY:" + index;
                 newBlock.yValue.Tag = "n:invUpZ:" + index;
                 newBlock.zValue.Tag = "n:invLeftX:" + index;
-                newBlock.value1.Text = "X";
-                newBlock.value2.Text = "Y";
-                newBlock.value3.Text = "Z";
+                newBlock.value1.Text = "X:";
+                newBlock.value2.Text = "Y:";
+                newBlock.value3.Text = "Z:";
                 newBlock.xValue.Text = Value1.ToString("0.000");
                 newBlock.yValue.Text = Value2.ToString("0.000");
                 newBlock.zValue.Text = Value3.ToString("0.000");
@@ -1590,9 +1653,9 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xValue.Tag = "n:invLeftY:" + index;
                 newBlock.yValue.Tag = "n:invForwardZ:" + index;
                 newBlock.zValue.Tag = "n:invUpX:" + index;
-                newBlock.value1.Text = "X";
-                newBlock.value2.Text = "Y";
-                newBlock.value3.Text = "Z";
+                newBlock.value1.Text = "X:";
+                newBlock.value2.Text = "Y:";
+                newBlock.value3.Text = "Z:";
                 newBlock.xValue.Text = Value1.ToString("0.000");
                 newBlock.yValue.Text = Value2.ToString("0.000");
                 newBlock.zValue.Text = Value3.ToString("0.000");
@@ -1618,9 +1681,9 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xValue.Tag = "n:invRotationsX:" + index;
                 newBlock.yValue.Tag = "n:invRotationsY:" + index;
                 newBlock.zValue.Tag = "n:invRotationsZ:" + index;
-                newBlock.value1.Text = "X";
-                newBlock.value2.Text = "Y";
-                newBlock.value3.Text = "Z";
+                newBlock.value1.Text = "X:";
+                newBlock.value2.Text = "Y:";
+                newBlock.value3.Text = "Z:";
                 newBlock.xValue.Text = Value1.ToString("0.000");
                 newBlock.yValue.Text = Value2.ToString("0.000");
                 newBlock.zValue.Text = Value3.ToString("0.000");
@@ -1658,6 +1721,41 @@ namespace InfiniteRuntimeModelEditor
             singleBlock.scaleSlider.ValueChanged += SliderChange;
             singleBlock.scaleValue.Tag = "n:" + tagType + ":" + index;
             otherPropTab.Children.Add(singleBlock);
+        }
+        #endregion
+
+
+        #region Control Functions
+        private void SliderChange(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Reflect change from slider to the value box
+                Slider slider = sender as Slider;
+                Grid parent = slider.Parent as Grid;
+                TextBox textBox = parent.Children[2] as TextBox;
+                textBox.Text = slider.Value.ToString("0.000");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private void ValueChange(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Reflect change from value box onto slider
+                TextBox textBox = sender as TextBox;
+                Grid parent = textBox.Parent as Grid;
+                Slider slider = parent.Children[1] as Slider;
+                slider.Value = float.Parse(textBox.Text);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         }
         #endregion
 

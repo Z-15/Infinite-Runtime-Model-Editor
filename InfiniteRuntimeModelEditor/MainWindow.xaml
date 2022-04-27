@@ -63,7 +63,8 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="350"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition MinWidth="225" MaxWidth="700" Width="350"/>
             </Grid.ColumnDefinitions>
             <Grid>
                 <h:HelixViewport3D x:Name="ModelViewer" RotateAroundMouseDownPoint="True" ShowViewCube="False" Background="#505050"/>
@@ -83,10 +84,12 @@
                 </StackPanel>
                 
             </Grid>
-            <Grid Grid.Column="1" Background="#606060">
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="#202020" BorderBrush="#404040"/>
+            <Grid Grid.Column="2" Background="#606060">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*" MinHeight="50"/>
+                    <RowDefinition Height="3"/>
+                    <RowDefinition Height="*" MinHeight="50"/>
                 </Grid.RowDefinitions>
                 <TabControl Style="{DynamicResource TabControlStyle}" Grid.Row="0">
                     <TabItem Style="{DynamicResource TabItemStyle}" Header="Model List">
@@ -134,15 +137,24 @@
                             </ScrollViewer>
                         </Grid>
                     </TabItem>
+                    <TabItem Header="Change List" Style="{DynamicResource TabItemStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <ScrollViewer>
+                                <StackPanel x:Name="changeList" Background="#303030"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </TabItem>
                 </TabControl>
-                
-                <TabControl Grid.Row="1" Style="{DynamicResource TabControlStyle}">
+                <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="#202020" BorderBrush="#404040" BorderThickness="1"/>
+                <TabControl Grid.Row="2" Style="{DynamicResource TabControlStyle}">
                     <TabItem Header="Item Properties" Style="{DynamicResource TabItemStyle}">
                         <ScrollViewer>
                             <Border BorderThickness="1" BorderBrush="#606060">
                                 <StackPanel x:Name="propTab" Background="#303030"/>
                             </Border>
-                            
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="Other Properties" Style="{DynamicResource TabItemStyle}">
@@ -150,7 +162,6 @@
                             <Border BorderThickness="1" BorderBrush="#606060">
                                 <StackPanel x:Name="otherPropTab" Background="#303030"/>
                             </Border>
-
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>

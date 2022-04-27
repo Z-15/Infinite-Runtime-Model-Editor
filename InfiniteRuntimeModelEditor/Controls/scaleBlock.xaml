@@ -16,11 +16,14 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Row="0">
-                <TextBlock Text="V:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
-                <Slider x:Name="scaleSlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
-                <TextBox x:Name="scaleValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="25"/>
-            </StackPanel>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="22"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="75"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="V:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
+            <Slider x:Name="scaleSlider" Minimum="-10" Maximum="10" VerticalAlignment="Center"  Grid.Column="1"/>
+            <TextBox x:Name="scaleValue" VerticalAlignment="Center" Height="20" Grid.Column="2"/>
         </Grid>
     </Grid>
 </UserControl>

@@ -25,21 +25,45 @@
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Row="0">
-                <TextBlock x:Name="value1" Text="X:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
-                <Slider x:Name="xSlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
-                <TextBox x:Name="xValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Row="1">
-                <TextBlock Text="Y:" x:Name="value2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
-                <Slider x:Name="ySlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
-                <TextBox x:Name="yValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Row="2">
-                <TextBlock Text="Z:" x:Name="value3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5"/>
-                <Slider x:Name="zSlider" Width="210" VerticalAlignment="Center" Minimum="-10" Maximum="10"/>
-                <TextBox x:Name="zValue" Margin="6,0,0,0" Width="75" HorizontalAlignment="Right" Height="20" VerticalContentAlignment="Center"/>
-            </StackPanel>
+            <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="75"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="value1" Text="X:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
+                <Slider x:Name="xSlider" VerticalAlignment="Center"  Grid.Column="1" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="xValue" VerticalAlignment="Center" Height="20" Grid.Column="2"/>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="75"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Y:" x:Name="value2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
+                <Slider x:Name="ySlider" VerticalAlignment="Center"  Grid.Column="1" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="yValue" VerticalAlignment="Center" Height="20" Grid.Column="2"/>
+            </Grid>
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="75"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Z:" x:Name="value3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5" Grid.Column="0"/>
+                <Slider x:Name="zSlider" VerticalAlignment="Center"  Grid.Column="1" Minimum="-10" Maximum="10"/>
+                <TextBox x:Name="zValue" VerticalAlignment="Center" Height="20" Grid.Column="2"/>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>
