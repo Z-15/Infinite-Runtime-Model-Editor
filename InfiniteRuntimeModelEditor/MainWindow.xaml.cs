@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Microsoft.Win32;
 using System.Text;
+using InfiniteRuntimeModelEditor.Windows;
 #endregion
 
 // Logo design credit - cmumme
@@ -56,7 +57,15 @@ namespace InfiniteRuntimeModelEditor
         // Close
         private void CommandBinding_Executed_Close(object sender, ExecutedRoutedEventArgs e)
         {
+            if (armorEditor != null)
+                DestroyArmorEditor();
             SystemCommands.CloseWindow(this);
+        }
+
+        public static void DestroyArmorEditor()
+        {
+            armorEditor.Close();
+            armorEditor = null;
         }
         // Move Window
         private void Move_Window(object sender, MouseButtonEventArgs e)
@@ -71,13 +80,18 @@ namespace InfiniteRuntimeModelEditor
         string renderAddress = string.Empty;
         string modelAddress = string.Empty;
         string selectedTag = string.Empty;
-        string tagID = string.Empty;
+        static string tagID = string.Empty;
+        static string mName;
+        static StackPanel changeList2;
+        static ArmorEditor armorEditor;
         int nodeCount = 0;
 
         Dictionary<int, ModelMarker> markers = new Dictionary<int, ModelMarker>(); // int = Overall index of the marker, not the index of the marker group.
         Dictionary<int, ModelNode> nodes = new Dictionary<int, ModelNode>(); // int = Node index.
         Dictionary<string, string> hashNames = new Dictionary<string, string>();
-        Dictionary<string, SaveChange> changes = new Dictionary<string, SaveChange>();
+        List<string> armorRegions = new List<string>();
+        List<string> armorVariants = new List<string>();
+        static Dictionary<string, SaveChange> changes = new Dictionary<string, SaveChange>();
         List<Brush> materials = new List<Brush>() { Brushes.Aqua, Brushes.Blue, Brushes.Cyan, Brushes.Orange, Brushes.Purple, Brushes.Yellow, Brushes.Violet, Brushes.Pink, Brushes.MintCream, Brushes.PowderBlue, Brushes.Tan, Brushes.PaleTurquoise };
         int materialInd = 0;
 
@@ -167,6 +181,8 @@ namespace InfiniteRuntimeModelEditor
             InitializeComponent();
             inhale_tagnames();
             inhale_hashnames();
+            inhale_armor();
+            changeList2 = changeList;
         }
 
         public void inhale_hashnames()
@@ -183,6 +199,23 @@ namespace InfiniteRuntimeModelEditor
                 }
             }
         }
+
+        public void inhale_armor()
+        {
+            string filename1 = Directory.GetCurrentDirectory() + @"\files\armorRegions.txt";
+            IEnumerable<string>? lines1 = System.IO.File.ReadLines(filename1);
+            foreach (string? line in lines1)
+            {
+                armorRegions.Add(line);
+            }
+
+            string filename2 = Directory.GetCurrentDirectory() + @"\files\armoreVariants.txt";
+            IEnumerable<string>? lines2 = System.IO.File.ReadLines(filename2);
+            foreach (string? line in lines2)
+            {
+                armorVariants.Add(line);
+            }
+        }
         #endregion
 
 
@@ -196,6 +229,7 @@ namespace InfiniteRuntimeModelEditor
             markers.Clear();
             hideMarker.IsChecked = false;
             hideNodes.IsChecked = false;
+            mName = modelName.Text;
 
             // Create node/marker structs for the model
             try
@@ -647,8 +681,9 @@ namespace InfiniteRuntimeModelEditor
                     {
                         string tag = change.tagID;
                         string path = change.path;
+                        string type = change.type;
                         string value = change.value;
-                        string newLine = tag + ":," + path + ";Float;" + value;
+                        string newLine = tag + ":," + path + ";" + type + ";" + value;
                         byte[] line = new UTF8Encoding(true).GetBytes(newLine + Environment.NewLine);
 
                         fs.Write(line, 0, line.Length);
@@ -663,11 +698,17 @@ namespace InfiniteRuntimeModelEditor
             }
         }
 
-        private void AddNewChange(string objType, string objID, string updateType, string path, string value)
+        public static void AddNewChange(string objType, string objID, string updateType, string path, string value)
         {
-            string key = objID + ":" + tagID + ":" + objType + ":" + updateType;
+            string key;
             changeItem newItem = new changeItem();
-            // Prevents the same value from being added twice
+            SaveChange newSave = new SaveChange();
+
+            if (objType == "a")
+                key = objID + ":E45455EF:a:" + updateType;
+            else
+                key = objID + ":" + tagID + ":" + objType + ":" + updateType;
+
             if (changes.ContainsKey(key))
             {
                 newItem = changes[key].item;
@@ -676,41 +717,54 @@ namespace InfiniteRuntimeModelEditor
             else
             {
                 newItem.remove.Click += RemoveChange;
-                changeList.Children.Add(newItem);
+                changeList2.Children.Add(newItem);
             }
 
-            if (objType == "n")
+            if (objType == "a")
             {
-                newItem.item.Text = modelName.Text + ";N:" + objID;
+                newItem.item.Text = "Armor";
+                newItem.type.Text = updateType;
+                newItem.value.Text = value;
+                newItem.remove.Tag = key;
+
+                newSave.id = objID;
+                newSave.tagID = "E45455EF";
+                newSave.path = path;
+                newSave.type = "4Byte";
+                newSave.value = value;
+                newSave.item = newItem;
             }
-            else if (objType == "m")
+            else
             {
-                newItem.item.Text = modelName.Text + ";M:" + objID;
+                if (objType == "n")
+                {
+                    newItem.item.Text = mName + ";N:" + objID;
+                }
+                else if (objType == "m")
+                {
+                    newItem.item.Text = mName + ";M:" + objID;
+                }
+
+                newItem.type.Text = updateType;
+                newItem.value.Text = value;
+                newItem.remove.Tag = key;
+
+                newSave.id = objID;
+                newSave.tagID = tagID;
+                newSave.path = path;
+                newSave.type = "Float";
+                newSave.value = value;
+                newSave.item = newItem;
             }
-            
-            newItem.type.Text = updateType;
-            newItem.value.Text = value;
-            newItem.remove.Tag = key;
-
-            // Creates a new change struct
-            SaveChange newSave = new SaveChange();
-            newSave.id = objID;
-            newSave.tagID = tagID;
-            newSave.path = path;
-            newSave.type = "float";
-            newSave.value = value;
-            newSave.item = newItem;
-
-            // Add new change to dictionary
             changes.Add(key, newSave);
         }
 
-        private void RemoveChange(object sender, RoutedEventArgs e)
+        private static void RemoveChange(object sender, RoutedEventArgs e)
         {
             Button remove = sender as Button;
             try
             {
-                changeList.Children.Remove(changes[remove.Tag.ToString()].item);
+                changeList2.Children.Remove(changes[remove.Tag.ToString()].item);
                 changes.Remove(remove.Tag.ToString());
             }
             catch (Exception ex)
@@ -2014,6 +2068,19 @@ namespace InfiniteRuntimeModelEditor
                     }
                 }
             }
+        }
+        #endregion
+
+
+        #region ArmorEditor
+        private void ArmorEditClick(object sender, RoutedEventArgs e)
+        {
+            TagStruct MCModel = TagsList["E45455EF"];
+            string MCAddress = MCModel.TagData.ToString("X");
+
+            string regionAddress = m.Get64BitCode(MCAddress + "+0xF4,0x654,0x0").ToString("X");
+            armorEditor = new ArmorEditor(m, armorRegions, armorVariants, changes, regionAddress);
+            armorEditor.Show();
         }
         #endregion
 

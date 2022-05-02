@@ -37,6 +37,9 @@
                 <MenuItem Style="{DynamicResource Z_MenuItemStyle}" Header="File" Margin="1,0,0,0">
                     <MenuItem Header="Save File" Click="SaveFile"/>
                 </MenuItem>
+                <MenuItem Style="{DynamicResource Z_MenuItemStyle}" Header="Tools" Margin="1,0,0,0">
+                    <MenuItem Header="Armor Editor" Click="ArmorEditClick"/>
+                </MenuItem>
                 <MenuItem Style="{DynamicResource Z_MenuItemStyle}" Header="Options" Margin="1,0,0,0">
                     <MenuItem Header="Reset Model" Click="UndoAllChanges"/>
                     <MenuItem Header="Clear Changes" Click="ClearChanges"/>

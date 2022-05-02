@@ -1,0 +1,26 @@
+0:Helmet
+1:Pants
+2:Neck
+3:Chest
+4:Diversity
+5:Left Forearm
+6:Left Bicep
+7:Left Elbow
+8:Left Hand
+9:Left Kneepad
+10:Left Flesh Knee
+11:Left Lower Leg
+12:Left Shoulder
+13:Left Shoulderpad
+14:Right Forearm
+15:Right Bicep
+16:Right Elbow
+17:Right Hand
+18:Right Kneepad
+19:Right Robo Knee
+20:Right Lower Leg
+21:Right Shoulder
+22:Right Shoulderpad
+23:Legs
+24:Left Wrist
+25:Right Wrist
