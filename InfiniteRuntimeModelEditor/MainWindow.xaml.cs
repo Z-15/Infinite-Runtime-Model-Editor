@@ -84,6 +84,7 @@ namespace InfiniteRuntimeModelEditor
         static string mName;
         static StackPanel changeList2;
         static ArmorEditor armorEditor;
+        bool limitSliders = true;
         int nodeCount = 0;
 
         Dictionary<int, ModelMarker> markers = new Dictionary<int, ModelMarker>(); // int = Overall index of the marker, not the index of the marker group.
@@ -469,7 +470,6 @@ namespace InfiniteRuntimeModelEditor
                                 markerItem.Header = "Marker: " + markerInd + " (" + markerName + ")";
                             }
 
-                            markerItem.Header = "Marker: " + markerInd + " (" + markerName + ")";
                             markerItem.Selected += LoadProperties;
                             markerItem.Style = Resources["TreeViewItemStyle"] as Style;
                             markers.Add(markerInd, newMarker);
@@ -1443,7 +1443,7 @@ namespace InfiniteRuntimeModelEditor
         #endregion
 
 
-        #region Hide Objects
+        #region Options
         private void NodeHideCheck(object sender, RoutedEventArgs e)
         {
             MenuItem mItem = sender as MenuItem;
@@ -1508,7 +1508,31 @@ namespace InfiniteRuntimeModelEditor
                 statusText.Text = "Error hiding nodes!";
                 Debug.WriteLine(ex.Message);
             }
-}
+        }
+
+
+        private void SliderLimitCheck(object sender, RoutedEventArgs e)
+        {
+            MenuItem mItem = sender as MenuItem;
+            try
+            {
+                if (mItem.IsChecked)
+                {
+                    limitSliders = false;
+                    statusText.Text = "Slider Limits Disabled...";
+                }
+                else
+                {
+                    limitSliders = true;
+                    statusText.Text = "Slider Limits Enabled...";
+                }
+            }
+            catch (Exception ex)
+            {
+                statusText.Text = "Error setting slider limits!";
+                Debug.WriteLine(ex.Message);
+            }
+        }
         #endregion
 
 
@@ -1551,12 +1575,25 @@ namespace InfiniteRuntimeModelEditor
                 rotBlock.xSlider.Value = xValue;
                 rotBlock.ySlider.Value = yValue;
                 rotBlock.zSlider.Value = zValue;
-                rotBlock.xSlider.Minimum = -180;
-                rotBlock.ySlider.Minimum = -90;
-                rotBlock.zSlider.Minimum = -180;
-                rotBlock.xSlider.Maximum = 180;
-                rotBlock.ySlider.Maximum = 90;
-                rotBlock.zSlider.Maximum = 180;
+                if (limitSliders)
+                {
+                    rotBlock.xSlider.Minimum = -180;
+                    rotBlock.ySlider.Minimum = -90;
+                    rotBlock.zSlider.Minimum = -180;
+                    rotBlock.xSlider.Maximum = 180;
+                    rotBlock.ySlider.Maximum = 90;
+                    rotBlock.zSlider.Maximum = 180;
+                }
+                else
+                {
+                    rotBlock.xSlider.Minimum = -360;
+                    rotBlock.ySlider.Minimum = -360;
+                    rotBlock.zSlider.Minimum = -360;
+                    rotBlock.xSlider.Maximum = 360;
+                    rotBlock.ySlider.Maximum = 360;
+                    rotBlock.zSlider.Maximum = 360;
+                }
+                
                 rotBlock.xValue.TextChanged += Update;
                 rotBlock.yValue.TextChanged += Update;
                 rotBlock.zValue.TextChanged += Update;
@@ -1744,12 +1781,24 @@ namespace InfiniteRuntimeModelEditor
                 newBlock.xSlider.Value = Value1;
                 newBlock.ySlider.Value = Value2;
                 newBlock.zSlider.Value = Value3;
-                newBlock.xSlider.Minimum = -180;
-                newBlock.xSlider.Maximum = 180;
-                newBlock.ySlider.Minimum = -90;
-                newBlock.ySlider.Maximum = 90;
-                newBlock.zSlider.Minimum = -180;
-                newBlock.zSlider.Maximum = 180;
+                if (limitSliders)
+                {
+                    newBlock.xSlider.Minimum = -180;
+                    newBlock.xSlider.Maximum = 180;
+                    newBlock.ySlider.Minimum = -90;
+                    newBlock.ySlider.Maximum = 90;
+                    newBlock.zSlider.Minimum = -180;
+                    newBlock.zSlider.Maximum = 180;
+                }
+                else
+                {
+                    newBlock.xSlider.Minimum = -360;
+                    newBlock.xSlider.Maximum = 360;
+                    newBlock.ySlider.Minimum = -360;
+                    newBlock.ySlider.Maximum = 360;
+                    newBlock.zSlider.Minimum = -360;
+                    newBlock.zSlider.Maximum = 360;
+                }
                 newBlock.xValue.TextChanged += Update;
                 newBlock.yValue.TextChanged += Update;
                 newBlock.zValue.TextChanged += Update;

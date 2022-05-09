@@ -13,7 +13,7 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    
+
     <!--Add the WindowChrome object-->
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="0.1"/>
@@ -45,23 +45,24 @@
                     <MenuItem Header="Clear Changes" Click="ClearChanges"/>
                     <MenuItem x:Name="hideNodes" Header="Hide Nodes" IsCheckable="True" Click="NodeHideCheck"/>
                     <MenuItem x:Name="hideMarker" Header="Hide Markers" IsCheckable="True" Click="MarkerHideCheck"/>
+                    <MenuItem x:Name="unlimitSliders" Header="Remove Rotation Limits (Buggy)" IsCheckable="True" Click="SliderLimitCheck"/>
                 </MenuItem>
             </Menu>
 
             <TextBlock Style="{DynamicResource Z_TextBlockStyle}" Text="Infinite Runtime Model Editor" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource MinimizeButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Minimize"
+                <Button Style="{StaticResource MinimizeButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Minimize"
                             Command="{x:Static SystemCommands.MinimizeWindowCommand}" />
-                    <Button x:Name="RestoreButton" Visibility="Collapsed" Style="{StaticResource RestoreButtonStyle}" 
+                <Button x:Name="RestoreButton" Visibility="Collapsed" Style="{StaticResource RestoreButtonStyle}" 
                             Command="{x:Static SystemCommands.RestoreWindowCommand}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Restore"/>
-                    <Button x:Name="MaximizeButton" Visibility="Visible" Style="{StaticResource MaximizeButtonStyle}" 
+                <Button x:Name="MaximizeButton" Visibility="Visible" Style="{StaticResource MaximizeButtonStyle}" 
                             Command="{x:Static SystemCommands.MaximizeWindowCommand}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Maximize" />
-                    <Button Style="{StaticResource CloseButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
+                <Button Style="{StaticResource CloseButtonStyle}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
                             Command="{x:Static SystemCommands.CloseWindowCommand}"/>
             </StackPanel>
 
-            <Rectangle Fill="Transparent" MouseDown="Move_Window" Margin="96,0,132,0"/>
+            <Rectangle Fill="Transparent" MouseDown="Move_Window" Margin="148,0,132,0"/>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -70,8 +71,12 @@
                 <ColumnDefinition MinWidth="225" MaxWidth="700" Width="350"/>
             </Grid.ColumnDefinitions>
             <Grid>
-                <h:HelixViewport3D x:Name="ModelViewer" RotateAroundMouseDownPoint="True" ShowViewCube="False" Background="#505050"/>
-                <StackPanel Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="123*"/>
+                    <ColumnDefinition Width="773*"/>
+                </Grid.ColumnDefinitions>
+                <h:HelixViewport3D x:Name="ModelViewer" RotateAroundMouseDownPoint="True" ShowViewCube="False" Background="#505050" Grid.ColumnSpan="2"/>
+                <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Name:" Style="{DynamicResource modelInfoStyle}" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         <TextBlock x:Name="modelName" Style="{DynamicResource modelInfoStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -85,7 +90,7 @@
                         <TextBlock x:Name="modelID" Style="{DynamicResource modelInfoStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
-                
+
             </Grid>
             <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="#202020" BorderBrush="#404040"/>
             <Grid Grid.Column="2" Background="#606060">
