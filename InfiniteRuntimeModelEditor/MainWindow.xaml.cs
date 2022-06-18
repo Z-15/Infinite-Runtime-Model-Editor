@@ -2145,7 +2145,7 @@ namespace InfiniteRuntimeModelEditor
         public long aobStart;
         private readonly long AOBScanStartAddr = Convert.ToInt64("0000010000000000", 16);
         private readonly long AOBScanEndAddr = Convert.ToInt64("000003ffffffffff", 16);
-        public string ScanMemAOBBaseAddr = "HaloInfinite.exe+0x3612B08";
+        public string ScanMemAOBBaseAddr = "HaloInfinite.exe+0x305B1B0";
         public string AOBScanTagStr = "74 61 67 20 69 6E 73 74 61 6E 63 65 73";
         public Dictionary<string, string> InhaledTagnames = new();
         public Dictionary<string, TagStruct> TagsList { get; set; } = new();
@@ -2222,7 +2222,7 @@ namespace InfiniteRuntimeModelEditor
                 if (!hooked)
                 {
                     m.OpenProcess("HaloInfinite.exe");
-                    BaseAddress = m.ReadLong("HaloInfinite.exe+0x40AD150");
+                    BaseAddress = m.ReadLong("HaloInfinite.exe+0x40C3048");
 
                     string validtest = m.ReadString(BaseAddress.ToString("X"));
                     Debug.WriteLine(validtest);
