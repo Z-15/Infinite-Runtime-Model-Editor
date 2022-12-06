@@ -2222,7 +2222,7 @@ namespace InfiniteRuntimeModelEditor
                 if (!hooked)
                 {
                     m.OpenProcess("HaloInfinite.exe");
-                    BaseAddress = m.ReadLong("HaloInfinite.exe+0x4334390");
+                    BaseAddress = m.ReadLong("HaloInfinite.exe+0x4356F98");
 
                     string validtest = m.ReadString(BaseAddress.ToString("X"));
                     Debug.WriteLine(validtest);
