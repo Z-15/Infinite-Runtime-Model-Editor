@@ -34,3 +34,4 @@ https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-5.0
 1. If you want to name hashes, just follow the format in the files/hashes.txt and add onto it. 
 2. Please report any bugs or issues you find.
 3. If there are any additional features you want to request, please do so.
+
